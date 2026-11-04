@@ -19,12 +19,28 @@ de series temporales.
 # Crear entorno virtual
 py -3.13 -m venv .venv
 
+# Para permitir la ejecución de scripts solo para esta ventana abierta
+Set-ExecutionPolicy Unrestricted -Scope Process
+
 # Activar
 .\.venv\Scripts\Activate.ps1
 
 # Instalar dependencias
 python -m pip install -r requirements.txt
 ```
+## Eliminacion del entorno en caso de error (eliminar procesos python en adminsitrador de tareas)
+
+```powershell
+# Eliminar entorno virtual
+Remove-Item -Recurse -Force .venv
+```
+
+## Forzar la cracion del entorno
+
+```powershell
+py -3.13 -m venv .venv --copies
+```
+
 
 ## Uso
 
