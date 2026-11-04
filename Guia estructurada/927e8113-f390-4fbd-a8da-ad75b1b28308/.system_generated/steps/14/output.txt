@@ -1,0 +1,25 @@
+Command exited with code 0.
+
+Command output:
+Columnas (21):
+  [0] X2
+  [1] X4
+  [2] X21
+  [3] X22
+  [4] X23
+  [5] X28
+  [6] X33
+  [7] X35
+  [8] X39
+  [9] X40
+  [10] X45
+  [11] X47
+  [12] X53
+  [13] X133
+  [14] X208
+  [15] X209
+  [16] anio
+  [17] mes
+  [18] dia
+  [19] rangoh
+  [20] DPA_DESPRO

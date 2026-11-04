@@ -1,0 +1,24 @@
+# ============================================================
+# DEPENDENCIAS: Homicidios Ecuador (2010-2024)
+# Python 3.13 | Entorno Virtual Aislado
+# ============================================================
+
+# ── CORE: Manipulación de Datos ──
+pandas>=2.2,<3.0
+pyarrow>=18.0
+
+# ── GEOESPACIAL ──
+geopandas>=1.0,<2.0
+shapely>=2.0
+pyproj>=3.7
+fiona>=1.10
+
+# ── LIMPIEZA DE TEXTO ──
+unidecode>=1.3
+
+# ── VISUALIZACIÓN ──
+matplotlib>=3.9
+
+# ── DESARROLLO ──
+pytest>=8.0
+

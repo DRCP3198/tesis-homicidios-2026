@@ -1,0 +1,31 @@
+# Entorno virtual
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Datos (no versionar archivos pesados)
+data/raw/
+data/interim/
+data/processed/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# R legacy
+R_legacy/.RData
+R_legacy/.Rhistory
+
+# OS
+Thumbs.db
+.DS_Store
+

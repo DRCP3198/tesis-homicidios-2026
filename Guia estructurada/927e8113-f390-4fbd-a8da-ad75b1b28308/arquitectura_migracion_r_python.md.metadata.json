@@ -1,0 +1,6 @@
+{
+  "summary": "Documento maestro de arquitectura para la migración del pipeline de preprocesamiento de datos de homicidios desde R a Python 3.13. Incluye:\n\n1. Análisis detallado de las 13 fases del código R con tabla de equivalencias R→Python\n2. Estructura de carpetas modular para el proyecto Python\n3. Comandos de configuración del entorno virtual con Python 3.13\n4. Archivo requirements.txt planificado\n5. Roadmap de 6 fases incrementales con cronograma de sesiones\n6. Orquestador main.py conceptual\n7. Decisiones técnicas (Parquet vs RDS, GeoPackage vs Shapefile, optimización sjoin)",
+  "updatedAt": "2026-11-04T15:56:09.744369900Z",
+  "requestFeedback": true,
+  "userFacing": true
+}
