@@ -82,7 +82,7 @@ D:\Tesis\
 | Fase | Descripción | Estado |
 |------|-------------|--------|
 | 1. Revicion de datos y Renombrado | Lectura CSV + renombrado 21 columnas | ✅ |
-| 2. Limpieza Textual | Mayúsculas, tildes, espacios | ⬜ |
+| 2. Limpieza Textual | Mayúsculas, tildes, espacios | ✅ |
 | 3. Filtrado | Año ≤2024, sin Galápagos | ⬜ |
 | 4. Validación Geoespacial | Point-in-polygon + reparación coords | ⬜ |
 | 5. Exportación Final | CSV, Parquet, GeoPackage | ⬜ |

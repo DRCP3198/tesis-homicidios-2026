@@ -76,8 +76,8 @@ def normalizar_todas_columnas(df: pd.DataFrame) -> pd.DataFrame:
         df[columna] = normalizar_columna(df[columna])
         valores_despues = df[columna].dropna().unique()[:3]
 
-        print(f"  ✔ {columna:<25} | Antes: {list(valores_antes)}")
-        print(f"  {'':25}   | Después: {list(valores_despues)}")
+        print(f"  [OK] {columna:<25} | Antes: {list(valores_antes)}")
+        print(f"       {'':25} | Después: {list(valores_despues)}")
 
     print("-" * 60)
     print(f"  Columnas normalizadas: {len(COLUMNAS_TEXTO_NORMALIZAR)}")

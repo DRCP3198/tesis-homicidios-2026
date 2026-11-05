@@ -129,7 +129,7 @@ def auditar_caracteres_especiales(
             reporte.hallazgos.append(hallazgo)
 
             # Imprimir hallazgo (equivalente R: print(paste0("⚠️ Columna...", col)))
-            print(f"  ⚠️  Columna: '{col}'")
+            print(f"  [ALERTA] Columna: '{col}'")
             for idx, ejemplo in zip(
                 indices_problemas[:max_ejemplos], ejemplos, strict=False
             ):
@@ -142,12 +142,12 @@ def auditar_caracteres_especiales(
     # Mensaje final (equivalente R: if (!hallazgos) print("¡Felicidades!..."))
     if reporte.limpio:
         print(
-            "  ✅ ¡Limpio! No se encontraron eñes ni tildes ocultas "
+            "  [OK] No se encontraron eñes ni tildes ocultas "
             "en las columnas de texto."
         )
     else:
         print(
-            f"  ❌ Se encontraron problemas en {reporte.columnas_con_problemas} "
+            f"  [ERROR] Se encontraron problemas en {reporte.columnas_con_problemas} "
             f"de {reporte.columnas_revisadas} columnas revisadas."
         )
     print("=" * 60)
