@@ -6,17 +6,25 @@ a lo largo del pipeline (strip, upper, remove accents).
 
 Equivalencia R:
     iconv(str_to_upper(str_trim(x)), to = "ASCII//TRANSLIT")
+
+Dependencia:
+    unidecode >= 1.3  (definida en requirements.txt)
 """
 import re
-import unicodedata
+
+import pandas as pd
+from unidecode import unidecode
 
 
+# =========================================================================
+# FUNCIÓN ESCALAR: normaliza un string individual
+# =========================================================================
 def normalizar_texto(texto: str) -> str:
     """
     Normaliza una cadena de texto individual:
     1. strip() — Remueve espacios al inicio y final (≡ str_trim)
     2. upper() — Convierte a mayúsculas (≡ str_to_upper)
-    3. Elimina acentos/tildes (≡ iconv to ASCII//TRANSLIT)
+    3. unidecode() — Transliteración ASCII (≡ iconv to ASCII//TRANSLIT)
 
     Parameters
     ----------
@@ -37,6 +45,8 @@ def normalizar_texto(texto: str) -> str:
     >>> normalizar_texto("SANTO DOMINGO DE LOS TSÁCHILAS")
     'SANTO DOMINGO DE LOS TSACHILAS'
     """
+    # Si no es string (NaN, None, int), devolvemos tal cual
+    # para que pandas lo trate como NA sin lanzar error.
     if not isinstance(texto, str):
         return texto
 
@@ -46,17 +56,53 @@ def normalizar_texto(texto: str) -> str:
     # 2. Upper (≡ str_to_upper en R)
     texto = texto.upper()
 
-    # 3. Eliminar acentos (≡ iconv(x, to="ASCII//TRANSLIT") en R)
-    # NFD descompone caracteres: é → e + ´ (combining accent)
-    # Luego filtramos los combining marks, dejando solo la letra base.
-    texto = unicodedata.normalize("NFD", texto)
-    texto = re.sub(r"[\u0300-\u036f]", "", texto)
-
-    # Caso especial: Ñ → N (NFD de Ñ = N + ̃  ya se resuelve arriba)
-    # Verificación adicional por si hay Ñ precompuestas residuales
-    texto = texto.replace("Ñ", "N").replace("ñ", "n")
+    # 3. Transliteración ASCII (≡ iconv(x, to="ASCII//TRANSLIT") en R)
+    # unidecode convierte: á→a, é→e, ñ→n, ü→u, etc.
+    texto = unidecode(texto)
 
     return texto
+
+
+# =========================================================================
+# FUNCIÓN VECTORIZADA: normaliza una columna completa de pandas
+# =========================================================================
+def normalizar_columna(serie: pd.Series) -> pd.Series:
+    """
+    Aplica la normalización textual completa a una columna (pd.Series).
+
+    Cadena de transformaciones (en una sola operación vectorizada):
+        strip()  →  upper()  →  unidecode()
+
+    Equivalencia R:
+        mutate(columna = iconv(str_to_upper(str_trim(columna)),
+                               to = "ASCII//TRANSLIT"))
+
+    Parameters
+    ----------
+    serie : pd.Series
+        Columna de texto a normalizar. Los valores NA se preservan.
+
+    Returns
+    -------
+    pd.Series
+        Columna normalizada: mayúsculas, sin tildes, sin espacios extremos.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> s = pd.Series(["  Guayaquíl  ", "Ñuño", None, "QUITO"])
+    >>> normalizar_columna(s).tolist()
+    ['GUAYAQUIL', 'NUNO', None, 'QUITO']
+    """
+    return serie.map(normalizar_texto, na_action="ignore")
+
+
+# =========================================================================
+# FUNCIÓN DE VERIFICACIÓN: detecta caracteres especiales residuales
+# =========================================================================
+# Patrón Regex idéntico al del código R (línea 158):
+# patron_especial <- "[áéíóúÁÉÍÓÚñÑüÜ]"
+PATRON_CARACTERES_ESPECIALES: str = r"[áéíóúÁÉÍÓÚñÑüÜ]"
 
 
 def contiene_caracteres_especiales(texto: str) -> bool:
@@ -78,6 +124,4 @@ def contiene_caracteres_especiales(texto: str) -> bool:
     """
     if not isinstance(texto, str):
         return False
-    patron = r"[áéíóúÁÉÍÓÚñÑüÜ]"
-    return bool(re.search(patron, texto))
-
+    return bool(re.search(PATRON_CARACTERES_ESPECIALES, texto))
