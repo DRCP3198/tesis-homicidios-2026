@@ -11,14 +11,27 @@ from pathlib import Path
 # RUTAS DEL PROYECTO
 # =========================================================================
 # Raíz del proyecto (D:\Tesis)
+# Define la ruta raíz del proyecto, partiendo de la ubicación del archivo actual 
+# y subiendo tres niveles de directorios usando el parent.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 # Directorios de datos
+
+# Directorio principal donde se almacenarán los datos del proyecto.
 DATA_DIR = PROJECT_ROOT / "data"
+
+# Directorio que contiene los datos originales sin modificaciones.
 RAW_DIR = DATA_DIR / "raw"
+
+# Directorio para almacenar datos intermedios durante el procesamiento.
+#interim	Almacena datos en etapas intermedias de limpieza y transformación.
 INTERIM_DIR = DATA_DIR / "interim"
+
+# Directorio donde se guardarán los datos limpios y preparados para el análisis.
 PROCESSED_DIR = DATA_DIR / "processed"
+
+# Directorio destinado al almacenamiento de archivos cartográficos originales.
 CARTOGRAFIA_DIR = RAW_DIR / "cartografia"
 
 # =========================================================================
@@ -40,6 +53,8 @@ CANTONES_GALAPAGOS = ["GALAPAGOS", "ISABELA", "SANTA CRUZ", "SAN CRISTOBAL"]
 PROVINCIAS_EXCLUIR_MAPA = ["GALAPAGOS", "ZONA NO DELIMITADA"]
 
 # Sistema de referencia de coordenadas objetivo (WGS84)
+# Define el sistema de referencia de coordenadas WGS84 (EPSG:4326) 
+# para representar ubicaciones geográficas mediante latitud y longitud.
 CRS_OBJETIVO = 4326
 
 # =========================================================================
