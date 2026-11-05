@@ -7,16 +7,24 @@ progresivamente a medida que se implementan los módulos.
 Uso:
     python main.py
 """
+
+# Importa las funciones encargadas de cargar los datos originales
+# de homicidios y guardar una copia intermedia con los nombres de
+# las columnas estandarizados.
 from src.ingesta.cargar_datos import (
     cargar_homicidios_raw,
     guardar_intermedio_renombrado,
 )
 
-
+#pipeline = proceso general que coordina las etapas de preprocesamiento.
+#ingesta = módulo encargado de cargar los datos originales.
+   
 def main():
-    """Pipeline principal de preprocesamiento."""
+    """Función principal encargada de ejecutar el pipeline de preprocesamiento."""
 
-    # ── FASE 1: Ingesta y Renombrado ──
+
+    # FASE 1: Carga los datos originales de homicidios y guarda
+    # una versión intermedia con las columnas renombradas.
     df = cargar_homicidios_raw()
     guardar_intermedio_renombrado(df)
 
