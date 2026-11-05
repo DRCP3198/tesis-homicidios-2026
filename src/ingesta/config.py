@@ -13,6 +13,7 @@ from pathlib import Path
 # Raíz del proyecto (D:\Tesis)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
+
 # Directorios de datos
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
@@ -45,6 +46,7 @@ CRS_OBJETIVO = 4326
 # MAPEO DE COLUMNAS: nombre_original → nombre_descriptivo
 # =========================================================================
 # Correspondencia directa con el rename() de la Fase 3 del código R (líneas 53-77)
+# Clave valor ***
 MAPEO_COLUMNAS = {
     "X2":         "codigo_caso",           # Identificador policial codificado
     "X4":         "tipo_delito",           # Tipificación legal (Homicidio, Asesinato)
@@ -67,9 +69,10 @@ MAPEO_COLUMNAS = {
     "X22":        "longitud",              # Coordenada decimal X (potencialmente corrupta)
     "X208":       "AUX_HORA_SISTEMA",      # Auditoría horaria interna
     "X209":       "AUX_MINUTO_SISTEMA",    # Auditoría de minutos interna
-}
+} 
 
 # Columnas de texto que requieren normalización (Fase 2)
+# LISTA **
 COLUMNAS_TEXTO_NORMALIZAR = [
     "codigo_caso",
     "tipo_delito",

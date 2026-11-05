@@ -95,3 +95,10 @@ D:\Tesis\
 - **Formato original**: RDS/CSV con 21 columnas codificadas
 - **Registros**: ~40,000 casos de homicidios en Ecuador
 
+
+## Extenciones recomendadas
+Vizualizacion de los archibos tipo parquet: Parquet Visualizer - lucien-martijin
+
+Para la vizualizacion de archibos .md: Markdown Preview Mermaid Support - bierner. (Ctrl + Shift + V)
+
+

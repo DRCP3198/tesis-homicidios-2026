@@ -11,12 +11,13 @@ Funciones principales:
 import pandas as pd
 
 from src.ingesta.config import (
-    ARCHIVO_HOMICIDIOS_CSV,
-    MAPEO_COLUMNAS,
-    INTERIM_RENOMBRADO,
+    ARCHIVO_HOMICIDIOS_CSV,    # Constante de ruta y nombre del archivo original de homicidios
+    MAPEO_COLUMNAS,            # diccionario para reetiquetado de las columnas
+    INTERIM_RENOMBRADO,        # Constante de la ruta y nombre para guardar el archivo intermedio
 )
 
-
+# Defino la funcion mediante "def", ingresa tipo string o None, y por defeto es None.abs
+# DataFrame es basicamente un tipo de dato compuesto, donde puedo manejar columnas, filas, etc 
 def cargar_homicidios_raw(ruta_csv: str | None = None) -> pd.DataFrame:
     """
     Lee el archivo CSV fuente de homicidios y renombra las columnas.
@@ -35,12 +36,12 @@ def cargar_homicidios_raw(ruta_csv: str | None = None) -> pd.DataFrame:
     pd.DataFrame
         DataFrame con las 21 columnas renombradas a nombres descriptivos.
     """
-    ruta = ruta_csv or ARCHIVO_HOMICIDIOS_CSV
+    ruta = ruta_csv or ARCHIVO_HOMICIDIOS_CSV #Ingreso una ruta especifica o toma la constante de config.py 
 
-    print("=" * 60)
+    print("=" * 60) #imprime una linea de 60 signos de igual
     print("  FASE 1: INGESTA Y RENOMBRADO DE DATOS")
-    print("=" * 60)
-    print(f"  Leyendo: {ruta}")
+    print("=" * 60) #imprime una linea de 60 signos de igual
+    print(f"  Leyendo: {ruta}") #Usamos f-string (la 'f' al inicio) para incrustar variables y expresiones
 
     # ── Lectura del CSV con tipos explícitos ──
     # Leemos TODO como string inicialmente para evitar que pandas
@@ -57,7 +58,9 @@ def cargar_homicidios_raw(ruta_csv: str | None = None) -> pd.DataFrame:
     print(f"  Columnas originales ({len(df.columns)}): {list(df.columns)}")
 
     # ── Verificar que todas las columnas esperadas existen ──
-    columnas_faltantes = set(MAPEO_COLUMNAS.keys()) - set(df.columns)
+    columnas_faltantes = set(MAPEO_COLUMNAS.keys()) - set(df.columns) #del diccionario verifico, comparando las llaves con las del csv
+    #set me sirve para comparar colecciones de datos, en este caso los nombres de las columnas
+    # en caso de no haver alguna coincidencia, lanza un error. E imprime las faltantes
     if columnas_faltantes:
         raise ValueError(
             f"Columnas faltantes en el CSV: {columnas_faltantes}. "
@@ -65,11 +68,11 @@ def cargar_homicidios_raw(ruta_csv: str | None = None) -> pd.DataFrame:
         )
 
     # ── Renombrar columnas (equivale a dplyr::rename()) ──
-    df = df.rename(columns=MAPEO_COLUMNAS)
+    df = df.rename(columns=MAPEO_COLUMNAS) #agaro mi dataframe y le aplico el diccionario clave valor
 
     # ── Seleccionar solo las columnas mapeadas (descartar extras si existen) ──
-    columnas_finales = list(MAPEO_COLUMNAS.values())
-    df = df[columnas_finales]
+    columnas_finales = list(MAPEO_COLUMNAS.values()) #obtengo los valores del diccionario
+    df = df[columnas_finales] #selecciono solo las columnas mapeadas
 
     print(f"  Columnas renombradas ({len(df.columns)}): {list(df.columns)}")
     print(f"  Primeras 3 filas:")
@@ -88,8 +91,10 @@ def guardar_intermedio_renombrado(df: pd.DataFrame) -> None:
     df : pd.DataFrame
         DataFrame con columnas ya renombradas.
     """
-    INTERIM_RENOMBRADO.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(INTERIM_RENOMBRADO, index=False, engine="pyarrow")
+
+    #Guarda ya renombrado bonito
+    INTERIM_RENOMBRADO.parent.mkdir(parents=True, exist_ok=True) #Si no existe la carpeta, la crea.
+    df.to_parquet(INTERIM_RENOMBRADO, index=False, engine="pyarrow") #lo guarda 
     print(f"  Guardado intermedio: {INTERIM_RENOMBRADO}")
     print(f"  Tamaño: {INTERIM_RENOMBRADO.stat().st_size / 1024:.1f} KB")
 
@@ -103,10 +108,10 @@ def cargar_intermedio_renombrado() -> pd.DataFrame:
     pd.DataFrame
         DataFrame previamente renombrado y guardado.
     """
-    if not INTERIM_RENOMBRADO.exists():
+    if not INTERIM_RENOMBRADO.exists(): 
         raise FileNotFoundError(
             f"No existe el archivo intermedio: {INTERIM_RENOMBRADO}. "
             "Ejecuta primero cargar_homicidios_raw() y guardar_intermedio_renombrado()."
         )
-    return pd.read_parquet(INTERIM_RENOMBRADO, engine="pyarrow")
+    return pd.read_parquet(INTERIM_RENOMBRADO, engine="pyarrow") #devuelvo mi tipo parquet renombrado
 
