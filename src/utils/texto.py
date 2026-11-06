@@ -51,6 +51,9 @@ def normalizar_texto(texto: str) -> str:
         return texto
 
     # 1. Strip (≡ str_trim en R)
+    # elimina todos los espacios en blanco 
+    # (así como tabulaciones \t o saltos de línea \n) 
+    # que se encuentren al principio y al final
     texto = texto.strip()
 
     # 2. Upper (≡ str_to_upper en R)
@@ -66,7 +69,7 @@ def normalizar_texto(texto: str) -> str:
 # =========================================================================
 # FUNCIÓN VECTORIZADA: normaliza una columna completa de pandas
 # =========================================================================
-def normalizar_columna(serie: pd.Series) -> pd.Series:
+def normalizar_columna(serie: pd.Series) -> pd.Series: #estructura de datos unidimensional (de pandas) que funciona como una columna
     """
     Aplica la normalización textual completa a una columna (pd.Series).
 
@@ -94,7 +97,7 @@ def normalizar_columna(serie: pd.Series) -> pd.Series:
     >>> normalizar_columna(s).tolist()
     ['GUAYAQUIL', 'NUNO', None, 'QUITO']
     """
-    return serie.map(normalizar_texto, na_action="ignore")
+    return serie.map(normalizar_texto, na_action="ignore") #agara mi serie pandas y ejecuta un map
 
 
 # =========================================================================

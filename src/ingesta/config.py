@@ -103,6 +103,10 @@ COLUMNAS_TEXTO_NORMALIZAR = [
     "dia_semana",
     "provincia",
 ]
+# Los otros datos como fecha_hecho, anio_hecho, hora_aproximada, edad_victima, 
+# latitud, longitud, AUX_HORA_SISTEMA y AUX_MINUTO_SISTEMA no se tratan por el momento
+
+
 
 # =========================================================================
 # ARCHIVOS DE SALIDA INTERMEDIA

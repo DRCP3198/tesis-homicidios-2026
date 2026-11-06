@@ -26,6 +26,11 @@ from src.utils.texto import PATRON_CARACTERES_ESPECIALES
 # ESTRUCTURA DE DATOS PARA EL REPORTE
 # =========================================================================
 @dataclass
+#decorador que implementa automaticamente funciones estandar como:
+# El constructor (__init__)
+# El equivalente al toString() de Java (en Python se llama __repr__)
+# comparación (__eq__)
+# observacion todos los atributos son publicos por defectos
 class HallazgoColumna:
     """Almacena los hallazgos de caracteres especiales en una columna."""
 

@@ -61,10 +61,10 @@ def normalizar_todas_columnas(df: pd.DataFrame) -> pd.DataFrame:
     print("=" * 60)
 
     # ── Verificar que todas las columnas de texto existen ──
-    columnas_faltantes = set(COLUMNAS_TEXTO_NORMALIZAR) - set(df.columns)
+    columnas_faltantes = set(COLUMNAS_TEXTO_NORMALIZAR) - set(df.columns) #set me coje una lista y me transofrma a una estructura de datos comparable/operable con el operador -
     if columnas_faltantes:
-        raise KeyError(
-            f"Columnas de texto no encontradas en el DataFrame: {columnas_faltantes}. "
+        raise KeyError( #quivalente a throw new Exception(...) en Java
+            f"Columnas de texto no encontradas (a normalizar) en el DataFrame: {columnas_faltantes}. "
             f"Columnas disponibles: {list(df.columns)}"
         )
 
@@ -73,8 +73,12 @@ def normalizar_todas_columnas(df: pd.DataFrame) -> pd.DataFrame:
     #   columna = iconv(str_to_upper(str_trim(columna)), to = "ASCII//TRANSLIT")
     for columna in COLUMNAS_TEXTO_NORMALIZAR:
         valores_antes = df[columna].dropna().unique()[:3]  # Muestra para el log
-        df[columna] = normalizar_columna(df[columna])
-        valores_despues = df[columna].dropna().unique()[:3]
+        # df[columna]: Selecciona toda esa columna del DataFrame.
+        # .dropna(): Borra temporalmente los valores nulos (NaN o vacíos) para que no molesten
+        #.unique(): Saca solo los valores únicos (quita repetidos, ideal para ver patrones rápido).
+        # [:3]: Recorta y se queda solo con los primeros 3 ejemplos.
+        df[columna] = normalizar_columna(df[columna]) #Internamente hace un map de la columna (tipo serie) aplicando a su vez la funcion individual de normalizacion para cada dato
+        valores_despues = df[columna].dropna().unique()[:3] #Unicamente para ver el resultado
 
         print(f"  [OK] {columna:<25} | Antes: {list(valores_antes)}")
         print(f"       {'':25} | Después: {list(valores_despues)}")
@@ -102,7 +106,14 @@ def guardar_intermedio_normalizado(df: pd.DataFrame) -> None:
         DataFrame con columnas de texto ya normalizadas.
     """
     INTERIM_NORMALIZADO.parent.mkdir(parents=True, exist_ok=True)
+    # INTERIM_NORMALIZADO: Es una variable de tipo pathlib.Path, usado para amnejar rutas
+    # .parent: Agarra la ruta, es decir, ignora el nombre del archivo final
+    # .mkdir(parents=True, exist_ok=True) Crea la ruta en caso de no exisitir
+
     df.to_parquet(INTERIM_NORMALIZADO, index=False, engine="pyarrow")
+    # Coje los datos df y guarda el DataFrame en formato Parquet
+    # index=False: Le dice a Pandas que no guarde el índice numérico de las filas
+    # engine="pyarrow": Especifica el "motor" o biblioteca que se encargará de traducir y comprimir
     tamanio_kb = INTERIM_NORMALIZADO.stat().st_size / 1024
     print(f"  Guardado intermedio: {INTERIM_NORMALIZADO}")
     print(f"  Tamaño: {tamanio_kb:.1f} KB")
@@ -127,7 +138,7 @@ def cargar_intermedio_normalizado() -> pd.DataFrame:
             f"No existe el archivo intermedio: {INTERIM_NORMALIZADO}. "
             "Ejecuta primero la Fase 2 (normalizar_todas_columnas + guardar)."
         )
-    return pd.read_parquet(INTERIM_NORMALIZADO, engine="pyarrow")
+    return pd.read_parquet(INTERIM_NORMALIZADO, engine="pyarrow") #Saco y devuelvo mis datos guardados, en tipo dataframe
 
 
 # =========================================================================
