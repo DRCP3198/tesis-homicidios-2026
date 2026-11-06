@@ -1,0 +1,26 @@
+Command exited with code 0.
+
+Command output:
+Top cantones in limbo (400 records):
+canton
+PUEBLO VIEJO                    94
+RUMINAHUI                       64
+PUERTO FRANCISCO DE ORELLANA    61
+EL PIEDRERO                     51
+EL CARMEN                       24
+LA TRONCAL                      17
+MANGA DEL CURA                  15
+MACHALA                         13
+GUAYAS                          11
+IBARRA                           9
+LOGRONO                          7
+HUAQUILLAS                       6
+ORELLANA                         4
+SAN MIGUEL DE SALCEDO            4
+TULCAN                           3
+EL ORO                           3
+GUAYAQUIL                        3
+PICHINCHA                        2
+MANABI                           2
+ESMERALDAS                       1
+Name: count, dtype: int64

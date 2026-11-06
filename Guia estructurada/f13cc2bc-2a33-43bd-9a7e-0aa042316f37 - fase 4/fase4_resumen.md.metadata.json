@@ -1,0 +1,5 @@
+{
+  "summary": "Resumen completo de la Fase 4: Validación Geoespacial Completa. Incluye resultados sobre datos reales (38,566 → 38,565 registros georreferenciados, 98.96% precisión topológica inicial), arquitectura de los 4 módulos en src/validacion_geo/, tabla de los 4 escenarios de reparación decimal, cobertura de 40 nuevos tests (96 total sin regresiones), y hallazgo diagnóstico sobre homologación de cantones.",
+  "updatedAt": "2026-11-06T16:12:24.282529100Z",
+  "userFacing": true
+}

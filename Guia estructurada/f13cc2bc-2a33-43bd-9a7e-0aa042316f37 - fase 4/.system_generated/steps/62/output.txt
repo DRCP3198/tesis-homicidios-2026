@@ -1,0 +1,9 @@
+Command exited with code 0.
+
+Command output:
+Lat NaN after coerce: 0
+Lon NaN after coerce: 0
+Both valid: 38566
+Both zero: 1
+Lat range: -4.974055 to 1.36965
+Lon range: -80.990349 to 0.0

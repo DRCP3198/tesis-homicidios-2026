@@ -1,0 +1,47 @@
+Command exited with code 0.
+
+Command output:
+Shape: (47739, 21)
+
+Dtypes:
+codigo_caso             object
+tipo_delito             object
+fecha_hecho             object
+anio_hecho              object
+mes_hecho               object
+dia_semana              object
+hora_aproximada         object
+provincia               object
+canton                  object
+zona_tipo               object
+lugar_especifico        object
+tipo_arma               object
+motivacion_detalle      object
+causa_especifica        object
+edad_victima            object
+sexo_victima            object
+nacionalidad_victima    object
+latitud                 object
+longitud                object
+AUX_HORA_SISTEMA        object
+AUX_MINUTO_SISTEMA      object
+dtype: object
+
+anio_hecho sample:
+0    2010
+1    2010
+2    2010
+3    2010
+4    2010
+5    2010
+6    2010
+7    2010
+8    2010
+9    2010
+Name: anio_hecho, dtype: object
+
+canton unique sample:
+['CUENCA' 'CAMILO PONCE ENRIQUEZ' 'GIRON' 'GUALACEO' 'SIGSIG'
+ 'SANTA ISABEL' 'CHORDELEG' 'PAUTE' 'PUCARA' 'SEVILLA DE ORO' 'NABON'
+ 'GUACHAPALA' 'EL PAN' 'SAN FERNANDO' 'CHILLANES' 'CHIMBO' 'GUARANDA'
+ 'SAN MIGUEL' 'CALUMA' 'ECHEANDIA']

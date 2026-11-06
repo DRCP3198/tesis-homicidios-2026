@@ -1,0 +1,17 @@
+Command exited with code 0.
+
+Command output:
+
+Name                     Length
+----                     ------
+cartografia.py             5431
+geometrias.py             10472
+reparacion.py             14136
+__init__.py                   1
+__pycache__                    
+test_filtros.py                
+test_ingesta.py                
+test_normalizar_texto.py       
+__init__.py                    
+
+
