@@ -4,7 +4,25 @@ config.py — Configuración centralizada del proyecto.
 Define todas las rutas, constantes y parámetros globales
 que los demás módulos importan. Usar pathlib.Path para
 garantizar compatibilidad cross-platform.
+
+¿Por qué existe este archivo?
+    En lugar de escribir rutas como "D:/Tesis/data/raw/..." repetidas en
+    cada archivo, las definimos UNA sola vez aquí. Si mañana movemos la
+    carpeta del proyecto, solo cambiamos este archivo y todo sigue funcionando.
+    Es el equivalente a las variables `repositorio` y `repositorio_carto`
+    del script R original (líneas 27-28).
+
+Convención: en Python, las variables escritas TODO EN MAYÚSCULAS se
+consideran "constantes" (valores que no deberían cambiar mientras el
+programa corre). Python no lo obliga, pero es un acuerdo entre programadores.
 """
+# `from ... import ...` trae solo la herramienta que necesitamos de una librería.
+# `pathlib` es una librería estándar de Python (viene incluida, no se instala).
+# `Path` es una clase que representa una ruta de archivo o carpeta como un
+# OBJETO (no como un simple texto). Ventajas:
+#   - Funciona igual en Windows (D:\Tesis) y en Linux/Mac (/home/tesis).
+#   - Permite unir rutas con el operador "/" de forma limpia.
+#   - Tiene métodos útiles como .exists(), .mkdir(), .parent, .stat(), etc.
 from pathlib import Path
 
 # =========================================================================
@@ -13,48 +31,79 @@ from pathlib import Path
 # Raíz del proyecto (D:\Tesis)
 # Define la ruta raíz del proyecto, partiendo de la ubicación del archivo actual 
 # y subiendo tres niveles de directorios usando el parent.
+#
+# Desglose paso a paso:
+#   __file__        → variable especial de Python que contiene la ruta de ESTE
+#                     archivo: "D:\Tesis\src\ingesta\config.py"
+#   Path(__file__)  → convierte ese texto en un objeto Path.
+#   .resolve()      → lo transforma en ruta absoluta y completa (sin atajos
+#                     como "..", y con la letra de unidad incluida).
+#   .parent         → sube UN nivel (la carpeta que contiene al archivo):
+#                     1er .parent → D:\Tesis\src\ingesta
+#                     2do .parent → D:\Tesis\src
+#                     3er .parent → D:\Tesis   ← ¡la raíz del proyecto!
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 # Directorios de datos
 
 # Directorio principal donde se almacenarán los datos del proyecto.
+# El operador "/" entre un Path y un texto UNE las rutas:
+#   D:\Tesis  /  "data"   →   D:\Tesis\data
 DATA_DIR = PROJECT_ROOT / "data"
 
 # Directorio que contiene los datos originales sin modificaciones.
+# REGLA DE ORO: lo que está en raw/ NUNCA se modifica, solo se lee.
 RAW_DIR = DATA_DIR / "raw"
 
 # Directorio para almacenar datos intermedios durante el procesamiento.
 #interim	Almacena datos en etapas intermedias de limpieza y transformación.
+# Aquí guardamos un archivo .parquet por cada fase terminada, así podemos
+# retomar el trabajo desde cualquier fase sin repetir todo desde cero.
 INTERIM_DIR = DATA_DIR / "interim"
 
 # Directorio donde se guardarán los datos limpios y preparados para el análisis.
 PROCESSED_DIR = DATA_DIR / "processed"
 
 # Directorio destinado al almacenamiento de archivos cartográficos originales.
+# (Los shapefiles del mapa de cantones del Ecuador).
 CARTOGRAFIA_DIR = RAW_DIR / "cartografia"
 
 # =========================================================================
 # ARCHIVOS FUENTE
 # =========================================================================
+# Ruta completa al CSV original de homicidios (21 columnas, años 2010-2025).
 ARCHIVO_HOMICIDIOS_CSV = RAW_DIR / "base_homi_2010_2025.csv"
+
+# Ruta completa al shapefile (mapa digital) de cantones del Ecuador.
+# Un "shapefile" es un formato de mapa que en realidad son varios archivos
+# con el mismo nombre (.shp = formas, .dbf = tabla de datos, .prj = proyección,
+# .shx = índice). Basta con apuntar al .shp y la librería encuentra los demás.
 ARCHIVO_SHAPEFILE_CANTONES = CARTOGRAFIA_DIR / "nxcantones.shp"
 
 # =========================================================================
 # PARÁMETROS DEL PIPELINE
 # =========================================================================
 # Año máximo a incluir en el análisis (excluye 2025 en adelante)
+# Se usa en la Fase 3 (filtros.py). Equivale a `filter(anio_hecho <= 2024)` en R.
 ANIO_MAXIMO = 2024
 
 # Cantones insulares a excluir del análisis continental
+# Es una LISTA (se escribe con corchetes [ ]): una colección ordenada de valores.
+# Equivale a c("GALAPAGOS", "ISABELA", "SANTA CRUZ", "SAN CRISTOBAL") en R.
 CANTONES_GALAPAGOS = ["GALAPAGOS", "ISABELA", "SANTA CRUZ", "SAN CRISTOBAL"]
 
 # Provincias a excluir del mapa base
+# Se usa en la Fase 4 (cartografia.py) para quitar del mapa las zonas que
+# no forman parte del análisis continental.
 PROVINCIAS_EXCLUIR_MAPA = ["GALAPAGOS", "ZONA NO DELIMITADA"]
 
 # Sistema de referencia de coordenadas objetivo (WGS84)
 # Define el sistema de referencia de coordenadas WGS84 (EPSG:4326) 
 # para representar ubicaciones geográficas mediante latitud y longitud.
+# En palabras simples: es el "idioma" en que se expresan las coordenadas.
+# 4326 es el código del sistema que usan los GPS y Google Maps
+# (latitud entre -90 y 90, longitud entre -180 y 180).
 CRS_OBJETIVO = 4326
 
 # =========================================================================
@@ -62,6 +111,11 @@ CRS_OBJETIVO = 4326
 # =========================================================================
 # Correspondencia directa con el rename() de la Fase 3 del código R (líneas 53-77)
 # Clave valor ***
+# Es un DICCIONARIO (se escribe con llaves { }): una colección de pares
+# "clave": "valor". Funciona como un traductor:
+#   - La CLAVE (izquierda) es el nombre críptico original del CSV ("X2").
+#   - El VALOR (derecha) es el nombre descriptivo que queremos ("codigo_caso").
+# Para consultar un valor se usa: MAPEO_COLUMNAS["X2"]  →  "codigo_caso"
 MAPEO_COLUMNAS = {
     "X2":         "codigo_caso",           # Identificador policial codificado
     "X4":         "tipo_delito",           # Tipificación legal (Homicidio, Asesinato)
@@ -88,6 +142,8 @@ MAPEO_COLUMNAS = {
 
 # Columnas de texto que requieren normalización (Fase 2)
 # LISTA **
+# Son las 13 columnas a las que se les aplicará: quitar espacios extremos,
+# pasar a MAYÚSCULAS y eliminar tildes/eñes (ver src/utils/texto.py).
 COLUMNAS_TEXTO_NORMALIZAR = [
     "codigo_caso",
     "tipo_delito",
@@ -111,15 +167,19 @@ COLUMNAS_TEXTO_NORMALIZAR = [
 # =========================================================================
 # ARCHIVOS DE SALIDA INTERMEDIA
 # =========================================================================
-INTERIM_RENOMBRADO = INTERIM_DIR / "homi_renombrado.parquet"
-INTERIM_NORMALIZADO = INTERIM_DIR / "homi_normalizado.parquet"
-INTERIM_FILTRADO = INTERIM_DIR / "homi_filtrado_2024.parquet"
-INTERIM_GEO_CORRECTOS = INTERIM_DIR / "geo_correctos.parquet"
+# Cada fase guarda su resultado en un archivo .parquet dentro de data/interim/.
+# Parquet es un formato binario, comprimido y que respeta los tipos de datos
+# (reemplaza al .rds de R). Es mucho más rápido de leer que un CSV.
+INTERIM_RENOMBRADO = INTERIM_DIR / "homi_renombrado.parquet"        # Salida Fase 1
+INTERIM_NORMALIZADO = INTERIM_DIR / "homi_normalizado.parquet"      # Salida Fase 2
+INTERIM_FILTRADO = INTERIM_DIR / "homi_filtrado_2024.parquet"       # Salida Fase 3
+INTERIM_GEO_CORRECTOS = INTERIM_DIR / "geo_correctos.parquet"       # Salida Fase 4
 
 # =========================================================================
 # ARCHIVOS DE SALIDA FINAL
 # =========================================================================
+# Archivos definitivos que se generarán en la Fase 5 (exportación final).
 SALIDA_CSV_FINAL = PROCESSED_DIR / "homi_Final_Continental_Etiquetado.csv"
 SALIDA_PARQUET_FINAL = PROCESSED_DIR / "homi_Final_Continental_Etiquetado.parquet"
+# .gpkg = GeoPackage: formato moderno de mapas en un solo archivo (reemplaza al .shp).
 SALIDA_GPKG_FINAL = PROCESSED_DIR / "homi_final.gpkg"
-
