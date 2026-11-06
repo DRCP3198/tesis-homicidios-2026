@@ -1,0 +1,14 @@
+Command exited with code 0.
+
+Command output:
+anio_hecho unique sorted:
+[2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023
+ 2024 2025]
+
+Nulls in anio_hecho: 0
+
+Galapagos cantons:
+  Total insular: 2
+canton
+SANTA CRUZ    2
+Name: count, dtype: int64
