@@ -24,11 +24,15 @@ from src.reportes.auditoria_caracteres import auditar_caracteres_especiales
 # =========================================================================
 # TESTS UNITARIOS: normalizar_texto() — Función escalar
 # =========================================================================
+# Un "test unitario" prueba UNA sola pieza pequeña de código (una función)
+# de manera aislada, con entradas chiquitas inventadas por nosotros, sin
+# depender de archivos grandes ni bases de datos externas.
 class TestNormalizarTexto:
     """Tests de la función normalizar_texto() en src/utils/texto.py."""
 
     def test_elimina_tildes_vocales(self):
         """Verifica la remoción de todas las vocales acentuadas."""
+        # Cada `assert A == B` verifica que la función devuelva exactamente lo esperado.
         assert normalizar_texto("áéíóú") == "AEIOU"
         assert normalizar_texto("ÁÉÍÓÚ") == "AEIOU"
 
@@ -47,6 +51,7 @@ class TestNormalizarTexto:
         """Verifica la remoción de espacios al inicio y final."""
         assert normalizar_texto("  Guayaquíl  ") == "GUAYAQUIL"
         assert normalizar_texto("  quito  ") == "QUITO"
+        # \t = tabulación, \n = salto de línea; strip() también los elimina.
         assert normalizar_texto("\t CUENCA \n") == "CUENCA"
 
     def test_mayusculas(self):
@@ -63,11 +68,13 @@ class TestNormalizarTexto:
 
     def test_texto_ya_limpio(self):
         """Verifica que un texto ya normalizado no cambie."""
+        # Propiedad de "idempotencia": aplicar la limpieza una segunda vez no cambia nada.
         assert normalizar_texto("QUITO") == "QUITO"
         assert normalizar_texto("GUAYAQUIL") == "GUAYAQUIL"
 
     def test_valor_no_string(self):
         """Verifica que valores no-string (NaN, None, int) pasen sin error."""
+        # Para None siempre se compara con `is None` (identidad), no con `==`.
         assert normalizar_texto(None) is None
         assert normalizar_texto(42) == 42
         assert normalizar_texto(3.14) == 3.14
@@ -75,7 +82,7 @@ class TestNormalizarTexto:
     def test_string_vacio(self):
         """Verifica el comportamiento con string vacío."""
         assert normalizar_texto("") == ""
-        assert normalizar_texto("   ") == ""
+        assert normalizar_texto("   ") == ""  # Solo espacios → queda vacío "".
 
     def test_caracteres_mixtos(self):
         """Verifica mezcla de acentos y caracteres ASCII normales."""
@@ -91,15 +98,20 @@ class TestNormalizarColumna:
 
     def test_serie_basica(self):
         """Verifica la normalización de una Serie simple."""
+        # pd.Series([...]) crea una columna suelta de pandas a partir de una lista.
         serie = pd.Series(["  Guayaquíl  ", "Ñuño", "QUITO"])
         resultado = normalizar_columna(serie)
+        # .tolist() convierte la columna de vuelta a lista para compararla con ==.
         assert resultado.tolist() == ["GUAYAQUIL", "NUNO", "QUITO"]
 
     def test_serie_con_nulos(self):
         """Verifica que los valores NA se preserven correctamente."""
+        # pd.NA es el valor nulo propio de pandas (similar al NA de R).
         serie = pd.Series(["  Guayaquíl  ", None, "Ñuño", pd.NA])
         resultado = normalizar_columna(serie)
+        # .iloc[n] → accede al elemento en la POSICIÓN n (0 = primero, 1 = segundo...).
         assert resultado.iloc[0] == "GUAYAQUIL"
+        # pd.isna(x) → True si x es nulo (sirve tanto para None como para NaN y pd.NA).
         assert pd.isna(resultado.iloc[1])
         assert resultado.iloc[2] == "NUNO"
         assert pd.isna(resultado.iloc[3])
@@ -112,6 +124,7 @@ class TestNormalizarColumna:
 
     def test_preserva_indice(self):
         """Verifica que el índice original se mantenga."""
+        # index=[10, 20, 30] asigna etiquetas personalizadas a las filas.
         serie = pd.Series(["á", "é", "í"], index=[10, 20, 30])
         resultado = normalizar_columna(serie)
         assert list(resultado.index) == [10, 20, 30]
@@ -121,15 +134,23 @@ class TestNormalizarColumna:
 # =========================================================================
 # TESTS DE INTEGRACIÓN: normalizar_todas_columnas() — Pipeline completo
 # =========================================================================
+# Un "test de integración" prueba cómo funcionan VARIAS piezas juntas
+# (ej. normalizar_todas_columnas llamando internamente a normalizar_columna y config).
 class TestNormalizarTodasColumnas:
     """Tests del pipeline completo de normalización."""
 
+    # ¿Qué es `@pytest.fixture`?
+    #   Es un decorador de pytest que marca a una función como "proveedora de
+    #   datos de prueba". Cualquier test que ponga `df_simulado` entre sus
+    #   paréntesis recibirá automáticamente un DataFrame NUEVO y limpio creado
+    #   por esta función, sin tener que copiar y pegar la tabla en cada test.
     @pytest.fixture
     def df_simulado(self) -> pd.DataFrame:
         """
         Crea un DataFrame de prueba que simula la estructura real
         con las 21 columnas (13 de texto + 8 no-texto).
         """
+        # pd.DataFrame({columna: [valores...]}) crea una tabla desde un diccionario.
         return pd.DataFrame({
             # 13 columnas de texto (con tildes y eñes intencionalmente)
             "codigo_caso":          ["  ABC-001  ", "DEF-002"],
@@ -156,11 +177,12 @@ class TestNormalizarTodasColumnas:
             "AUX_MINUTO_SISTEMA":   ["30", "45"],
         })
 
+    # pytest ve el parámetro `df_simulado` y le inyecta lo que devuelve el fixture de arriba.
     def test_normaliza_13_columnas(self, df_simulado: pd.DataFrame):
         """Verifica que las 13 columnas de texto se normalicen."""
         resultado = normalizar_todas_columnas(df_simulado)
 
-        # Verificar cada columna de texto
+        # Verificar cada columna de texto y cada celda dentro de ella.
         for col in COLUMNAS_TEXTO_NORMALIZAR:
             for valor in resultado[col].dropna():
                 assert valor == valor.upper(), (
@@ -173,6 +195,7 @@ class TestNormalizarTodasColumnas:
     def test_guayaquil_normalizado(self, df_simulado: pd.DataFrame):
         """Verifica que 'Guayaquíl' → 'GUAYAQUIL'."""
         resultado = normalizar_todas_columnas(df_simulado)
+        # .loc[fila, columna] → accede a la celda de la fila 0 en la columna "canton".
         assert resultado.loc[0, "canton"] == "GUAYAQUIL"
 
     def test_columnas_no_texto_intactas(self, df_simulado: pd.DataFrame):
@@ -190,6 +213,9 @@ class TestNormalizarTodasColumnas:
     def test_error_columna_faltante(self):
         """Verifica que lance KeyError si falta una columna de texto."""
         df_incompleto = pd.DataFrame({"codigo_caso": ["ABC"]})
+        # `with pytest.raises(TipoDeError, match="texto"):` → esta prueba PASA
+        # solo si el código de adentro efectivamente lanza ese error y su mensaje
+        # contiene "Columnas de texto no encontradas". Si NO lanzara error, fallaría.
         with pytest.raises(KeyError, match="Columnas de texto no encontradas"):
             normalizar_todas_columnas(df_incompleto)
 
@@ -209,6 +235,7 @@ class TestAuditoriaCaracteres:
         reporte = auditar_caracteres_especiales(
             df, columnas=["canton", "provincia"]
         )
+        # Accedemos a los atributos del objeto `ReporteAuditoria` con punto "."
         assert not reporte.limpio
         assert reporte.columnas_con_problemas == 1
         assert reporte.hallazgos[0].columna == "canton"
@@ -242,4 +269,3 @@ class TestAuditoriaCaracteres:
         df = pd.DataFrame({"canton": ["QUITO"]})
         with pytest.raises(KeyError, match="Columnas no encontradas"):
             auditar_caracteres_especiales(df, columnas=["inexistente"])
-

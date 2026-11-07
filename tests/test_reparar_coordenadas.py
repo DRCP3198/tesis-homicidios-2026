@@ -41,9 +41,14 @@ from src.validacion_geo.reparacion import (
 # =========================================================================
 # FIXTURE: Mapa cantonal (cargado una sola vez por sesión de test)
 # =========================================================================
+# `scope="module"` le indica a pytest que cargue el shapefile UNA SOLA VEZ
+# para todo este archivo de pruebas y reutilice el resultado en cada test.
+# Sin `scope="module"`, leería y reproyectaría el mapa en cada prueba (sería lento).
 @pytest.fixture(scope="module")
 def mapa_cantonal():
     """Carga el mapa cantonal una sola vez para todos los tests del módulo."""
+    # `try ... except` atrapa el error si el shapefile no está en disco y
+    # salta la prueba limpiamente con `pytest.skip(...)`.
     try:
         return cargar_mapa_cantonal()
     except FileNotFoundError:
@@ -76,6 +81,9 @@ _COLUMNAS_SCHEMA = [
 ]
 
 
+# Función auxiliar ("fábrica") que construye un DataFrame de 1 fila con
+# exactamente las mismas columnas que produce `crear_geodataframe_puntos()`,
+# para poder inyectarlo directamente en las funciones de reparación.
 def _crear_df_sintetico(
     canton: str,
     lat_str: str,
@@ -84,6 +92,7 @@ def _crear_df_sintetico(
     lon_num: float,
 ) -> pd.DataFrame:
     """Crea un DataFrame sintético de un registro para testing."""
+    # Lista con 1 diccionario adentro → DataFrame de 1 fila.
     return pd.DataFrame([{
         "codigo_caso": "TEST-001",
         "tipo_delito": "HOMICIDIO",
@@ -118,12 +127,14 @@ def _crear_df_sintetico(
 # =========================================================================
 # TESTS UNITARIOS: Funciones de reconstrucción decimal (puras)
 # =========================================================================
+# Estas 4 clases prueban únicamente la manipulación del texto de la latitud
+# (no tocan el mapa), por eso corren en milisegundos.
 class TestReconstruccionEscenario1:
     """Tests del Escenario 1: X.XXXXXX (latitud positiva norte)."""
 
     def test_formato_basico(self):
         """Verifica la inserción de punto decimal en formato X.XXXXXX."""
-        s = pd.Series(["136965"])     # Ibarra: 1.36965
+        s = pd.Series(["136965"])     # Norte de Ecuador: 1.36965
         resultado = reconstruir_escenario_1(s)
         assert resultado.iloc[0] == "1.36965"
 
@@ -145,6 +156,7 @@ class TestReconstruccionEscenario1:
         """Verifica que el resultado sea una Serie de strings."""
         s = pd.Series(["123456"])
         resultado = reconstruir_escenario_1(s)
+        # En pandas clásico las columnas de texto tienen dtype `object`.
         assert resultado.dtype == object  # dtype string en pandas
 
 
@@ -190,6 +202,7 @@ class TestReconstruccionEscenario3:
         """Verifica que el signo negativo se inserte correctamente."""
         s = pd.Series(["123456"])
         resultado = reconstruir_escenario_3(s)
+        # .startswith("-") → True si empieza con signo menos; `"." in texto` → True si contiene punto.
         assert resultado.iloc[0].startswith("-")
         assert "." in resultado.iloc[0]
 
@@ -265,6 +278,8 @@ class TestLimpiarCadenaLat:
 # =========================================================================
 # TESTS DE INTEGRACIÓN: Escenarios con mapa real
 # =========================================================================
+# Aquí SÍ usamos `mapa_cantonal` (el shapefile real): verificamos que la
+# coordenada reconstruida realmente aterrice dentro del polígono de su cantón.
 class TestValidacionSjoin:
     """Tests de validar_reconstruccion_sjoin() con datos reales."""
 
@@ -288,6 +303,7 @@ class TestValidacionSjoin:
 
         lat_reconstruida = reconstruir_escenario_3(df_prueba["limpia_lat"])
         ids_rescatados = validar_reconstruccion_sjoin(df_prueba, lat_reconstruida, mapa_cantonal)
+        # El ID_temp del registro sintético es 1 → debe aparecer en el set de rescatados.
         assert 1 in ids_rescatados, (
             "FALLO CRÍTICO: El Escenario 3 no pudo reparar la latitud de GUAYAQUIL. "
             f"lat_reconstruida='{lat_reconstruida.iloc[0]}'"
@@ -331,6 +347,8 @@ class TestValidacionSjoin:
         Verifica que un punto en cantón erróneo NO se rescata.
         Coordenada de Guayaquil reportada como QUITO → no debe validar.
         """
+        # Prueba negativa: aunque el punto cae en Ecuador (Guayaquil), el registro
+        # dice "QUITO", así que NO coincide y NO debe darse por válido.
         df_prueba = _crear_df_sintetico(
             canton="QUITO",          # Canton incorrecto para estas coords
             lat_str="21894",
@@ -352,6 +370,8 @@ class TestValidacionSjoin:
 class TestReparacionCompleta:
     """Tests del orquestador reparar_coordenadas_corruptas()."""
 
+    # Método auxiliar interno de la clase (no empieza con `test_`, así que
+    # pytest no lo ejecuta como prueba; solo lo llamamos desde los tests de abajo).
     def _make_pool_corruptos(self) -> pd.DataFrame:
         """Crea un pool de registros con coordenadas corruptas (sin punto)."""
         rows = [
@@ -413,7 +433,9 @@ class TestReparacionCompleta:
         todos_ids = []
         for df_esc in [esc1, esc2, esc3, esc4]:
             if len(df_esc) > 0:
+                # .extend(lista) agrega TODOS los elementos de esa lista a `todos_ids`.
                 todos_ids.extend(df_esc["ID_temp"].tolist())
+        # Si no hay duplicados, el tamaño de la lista es igual al tamaño del set sin repetidos.
         assert len(todos_ids) == len(set(todos_ids)), (
             "Se encontraron ID_temp duplicados entre escenarios. "
             "Un registro fue rescatado por más de un escenario."
@@ -517,6 +539,7 @@ class TestEnsamblaje:
     def test_elimina_filas_nan_coords(self):
         """Verifica que filas con NaN en lat/lon sean eliminadas."""
         df = self._make_df(5, 1)
+        # float("nan") crea un valor numérico nulo (Not a Number) a propósito.
         df.loc[0, "lat_num"] = float("nan")
         df.loc[1, "lon_num"] = float("nan")
 
@@ -594,10 +617,11 @@ class TestPipelineCompletoReal:
 
         ids_correctos = set(correctos["ID_temp"])
         ids_corregir = set(corregir["ID_temp"])
+        # "&" entre dos conjuntos (`set`) calcula la INTERSECCIÓN (elementos en común).
+        # No debe haber ningún ID que esté en ambos grupos a la vez.
         interseccion = ids_correctos & ids_corregir
 
         assert len(interseccion) == 0, (
             f"Se encontraron {len(interseccion)} IDs en ambos grupos: "
             f"{list(interseccion)[:5]}"
         )
-

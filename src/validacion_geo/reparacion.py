@@ -12,6 +12,15 @@ La solución: Reconstruir el punto decimal probando 4 escenarios de
 formato, y validar cada reconstrucción mediante sjoin contra el mapa
 cantonal para confirmar que el punto reparado cae dentro de su cantón.
 
+¿Por qué exactamente esos 4 formatos?
+    Porque Ecuador continental abarca desde ~1.4° Norte (Esmeraldas/Carchi)
+    hasta ~5.0° Sur (Loja/Zamora). Eso significa que TODA latitud válida en
+    Ecuador cae obligatoriamente en uno de estos 4 moldes:
+        1.  X.XXXXXX   → Norte lejos de la línea (ej.  1.25° en Esmeraldas)
+        2.  0.XXXXXX   → Norte pegado a la línea (ej.  0.35° en Ibarra)
+        3. -X.XXXXXX   → Sur lejos de la línea   (ej. -2.18° en Guayaquil) ← ¡la mayoría!
+        4. -0.XXXXXX   → Sur pegado a la línea   (ej. -0.18° en Quito)
+
 Los 4 Escenarios (replicando el R original):
     1. X.XXXXXX   → Latitud positiva (Norte del Ecuador)
     2. 0.XXXXXX   → Latitud positiva cercana a la línea ecuatorial
@@ -26,9 +35,9 @@ Funciones principales:
     - validar_reconstruccion_sjoin(): Prueba sjoin tras reparación
     - reparar_coordenadas_corruptas(): Orquestador secuencial
 """
-import geopandas as gpd
-import numpy as np
-import pandas as pd
+import geopandas as gpd  # Tablas geoespaciales y unión punto-polígono (sjoin).
+import numpy as np       # Operaciones numéricas base.
+import pandas as pd      # Tablas y columnas de datos (DataFrame, Series).
 
 from src.ingesta.config import CRS_OBJETIVO  # 4326 (WGS84)
 
@@ -36,6 +45,9 @@ from src.ingesta.config import CRS_OBJETIVO  # 4326 (WGS84)
 # =========================================================================
 # FUNCIONES AUXILIARES: Limpieza de cadena numérica
 # =========================================================================
+# El guión bajo "_" al inicio del nombre (_limpiar_cadena_lat) es una
+# convención de Python: indica que es una función INTERNA ("privada") de este
+# archivo; los demás módulos no deberían necesitar llamarla directamente.
 def _limpiar_cadena_lat(serie_lat: pd.Series) -> pd.Series:
     r"""
     Limpia la cadena de latitud eliminando puntos y signos negativos.
@@ -59,8 +71,15 @@ def _limpiar_cadena_lat(serie_lat: pd.Series) -> pd.Series:
     pd.Series
         Cadena numérica limpia (sin puntos ni signos).
     """
+    # .astype(str) → asegura que todos los valores sean texto.
     limpia = serie_lat.astype(str)
+    # .str.replace(viejo, nuevo) → en cada celda reemplaza `viejo` por `nuevo`.
+    # Aquí reemplazamos cualquier punto "." por "" (nada = lo borra).
+    # Ej: "-2.18.94" → "-21894"
     limpia = limpia.str.replace(r"\.", "", regex=True)
+    # Ahora borramos cualquier signo menos "-". regex=False porque "-" es un
+    # carácter literal simple, no hace falta expresión regular.
+    # Ej: "-21894" → "21894" (solo quedan dígitos puros, listos para rearmar).
     limpia = limpia.str.replace("-", "", regex=False)
     return limpia
 
@@ -68,6 +87,9 @@ def _limpiar_cadena_lat(serie_lat: pd.Series) -> pd.Series:
 # =========================================================================
 # ESCENARIO 1: Formato "X.XXXXXX" (Positivo — Hemisferio Norte)
 # =========================================================================
+# Nota de diseño: las 4 funciones de reconstrucción son "FUNCIONES PURAS":
+# reciben una columna de texto y devuelven otra columna nueva sin modificar
+# nada externo. Eso permite probarlas de forma aislada y muy rápida.
 def reconstruir_escenario_1(limpia_lat: pd.Series) -> pd.Series:
     """
     Reconstruye latitud con formato X.XXXXXX (positivo).
@@ -102,8 +124,14 @@ def reconstruir_escenario_1(limpia_lat: pd.Series) -> pd.Series:
     0    1.36965
     dtype: object
     """
+    # OJO con las posiciones: en R se cuenta desde 1, en Python desde 0.
+    #   limpia_lat = "136965"
+    #   .str[0]  → carácter en posición 0 (el primero): "1"
+    #   .str[1:] → desde la posición 1 hasta el final ("slicing"): "36965"
     parte_entera = limpia_lat.str[0]        # str_sub(x, 1, 1)
     parte_decimal = limpia_lat.str[1:]      # str_sub(x, 2, len)
+    # El operador "+" entre columnas de texto pega (concatena) fila por fila:
+    #   "1" + "." + "36965"  →  "1.36965"
     return parte_entera + "." + parte_decimal
 
 
@@ -130,8 +158,14 @@ def reconstruir_escenario_2(limpia_lat: pd.Series) -> pd.Series:
     pd.Series
         Latitud reconstruida: "0.XXXXXXX"
     """
-    parte_1 = limpia_lat.str[0]
-    parte_2 = limpia_lat.str[1:]
+    # ¿Por qué hace falta este escenario aparte del 1?
+    # Porque cuando alguien escribió 0.9592 sin punto ("09592") y R lo pasó
+    # por as.numeric(), el cero inicial desapareció → quedó "9592".
+    # El Escenario 1 armaría "9.592" (en Colombia/Venezuela), mientras que este
+    # vuelve a anteponer el "0." perdido → "0.9592" (Esmeraldas).
+    parte_1 = limpia_lat.str[0]   # Primer dígito (ej. "9")
+    parte_2 = limpia_lat.str[1:]  # Resto de dígitos (ej. "592")
+    # "0." + "9" + "592" → "0.9592"
     return "0." + parte_1 + parte_2
 
 
@@ -171,8 +205,10 @@ def reconstruir_escenario_3(limpia_lat: pd.Series) -> pd.Series:
     0    -2.14589
     dtype: object
     """
-    parte_entera = limpia_lat.str[0]
-    parte_decimal = limpia_lat.str[1:]
+    # Ejemplo con Guayaquil (limpia_lat = "21894"):
+    parte_entera = limpia_lat.str[0]    # "2"
+    parte_decimal = limpia_lat.str[1:]  # "1894"
+    # "-" + "2" + "." + "1894"  →  "-2.1894"
     return "-" + parte_entera + "." + parte_decimal
 
 
@@ -199,6 +235,9 @@ def reconstruir_escenario_4(limpia_lat: pd.Series) -> pd.Series:
     pd.Series
         Latitud reconstruida: "-0.XXXXXXX"
     """
+    # Igual que el Escenario 2, pero al SUR de la línea ecuatorial:
+    # Ej. Quito está en -0.1807 → sin punto ni cero quedó "1807"
+    # → aquí rearmamos "-0." + "1" + "807" = "-0.1807".
     parte_1 = limpia_lat.str[0]
     parte_2 = limpia_lat.str[1:]
     return "-0." + parte_1 + parte_2
@@ -208,10 +247,10 @@ def reconstruir_escenario_4(limpia_lat: pd.Series) -> pd.Series:
 # VALIDACIÓN: sjoin tras reconstrucción
 # =========================================================================
 def validar_reconstruccion_sjoin(
-    df: pd.DataFrame,
-    lat_reconstruida: pd.Series,
-    mapa: gpd.GeoDataFrame,
-) -> set[int]:
+    df: pd.DataFrame,              # Filas candidatas a reparar.
+    lat_reconstruida: pd.Series,   # La nueva latitud propuesta por un escenario.
+    mapa: gpd.GeoDataFrame,        # El mapa de cantones contra el que probamos.
+) -> set[int]:                     # Devuelve un CONJUNTO con los ID_temp rescatados.
     """
     Valida una reconstrucción de latitud mediante sjoin contra el mapa.
 
@@ -245,15 +284,19 @@ def validar_reconstruccion_sjoin(
     set[int]
         Conjunto de ID_temp de los registros exitosamente reparados.
     """
+    # Si no hay filas que probar, devolvemos un conjunto vacío set().
     if len(df) == 0:
         return set()
 
     # Convertir latitud reconstruida a numérico
+    # Ej: "-2.1894" → -2.1894 | "1." (cadena rota) → 1.0 | basura → NaN
     lat_num = pd.to_numeric(lat_reconstruida, errors="coerce")
 
     # Filtrar registros con latitud válida
+    # .notna() → True donde NO es nulo. "&" = "Y" lógico fila por fila
+    # (en pandas se usa "&" entre columnas booleanas, NO la palabra `and`).
     validos = lat_num.notna() & df["lon_num"].notna()
-    if validos.sum() == 0:
+    if validos.sum() == 0:  # Ninguna fila tuvo ambas coordenadas válidas.
         return set()
 
     df_validos = df[validos].copy()
@@ -261,6 +304,7 @@ def validar_reconstruccion_sjoin(
 
     # Crear GeoDataFrame de puntos con la latitud reconstruida
     # Equivale a: st_as_sf(data.frame(y=..., x=...), coords=c("x","y"), crs=...)
+    # Usamos la longitud que ya teníamos (lon_num) + la NUEVA latitud propuesta.
     gdf_prueba = gpd.GeoDataFrame(
         df_validos,
         geometry=gpd.points_from_xy(df_validos["lon_num"], lat_valida),
@@ -268,6 +312,9 @@ def validar_reconstruccion_sjoin(
     )
 
     # sjoin vectorizado (reemplaza el bucle R completo)
+    # how="inner" → aquí solo nos interesan los puntos que SÍ cayeron dentro
+    #               de algún polígono del mapa; los que caen en el mar o en
+    #               otro país se descartan directo (más rápido que "left").
     resultado = gpd.sjoin(
         gdf_prueba,
         mapa[["CANTON_MAPA", "geometry"]],
@@ -276,6 +323,9 @@ def validar_reconstruccion_sjoin(
     )
 
     # Filtrar donde cantón reportado == cantón geográfico
+    # ¡Esta es la prueba de fuego! No basta con que el punto caiga en Ecuador:
+    # tiene que caer específicamente en el MISMO cantón que dice el registro.
+    # Si la reparación de Guayaquil cayó dentro del polígono de GUAYAQUIL → ¡rescatado!
     ids_rescatados = set(
         resultado.loc[
             resultado["canton"] == resultado["CANTON_MAPA"], "ID_temp"
@@ -326,6 +376,7 @@ def reparar_coordenadas_corruptas(
     """
     print("  [4.6] Algoritmo reparador de coordenadas decimales")
 
+    # Si no llegó ningún registro sin punto decimal, devolvemos 5 tablas vacías.
     if len(geo_corregir_decimales) == 0:
         print("        No hay registros con decimales corruptos para reparar.")
         vacio = pd.DataFrame()
@@ -334,11 +385,19 @@ def reparar_coordenadas_corruptas(
     # ── Preparación: limpiar cadena de latitud ──
     # Equivale a: gsub("\\.", "", ...) + gsub("-", "", ...)
     df = geo_corregir_decimales.copy()
+    # Dejamos solo los dígitos puros en una columna auxiliar "limpia_lat".
     df["limpia_lat"] = _limpiar_cadena_lat(df["latitud_original"])
 
+    # `pendientes` es la "bolsa" de casos aún no resueltos. A medida que cada
+    # escenario rescata registros, los sacamos de `pendientes` para que el
+    # siguiente escenario no los vuelva a evaluar (evita duplicados).
     pendientes = df.copy()
     n_total = len(pendientes)
 
+    # Lista de parejas (nombre_para_imprimir, función_a_ejecutar).
+    # En Python las funciones son objetos como cualquier otro: se pueden guardar
+    # dentro de una lista y recorrerlas con un `for` para no repetir 4 veces el
+    # mismo bloque de código (principio DRY: "Don't Repeat Yourself").
     escenarios = [
         ("Escenario 1: X.XXXXXX  (positivo Norte)", reconstruir_escenario_1),
         ("Escenario 2: 0.XXXXXX  (positivo Ecuador)", reconstruir_escenario_2),
@@ -346,37 +405,52 @@ def reparar_coordenadas_corruptas(
         ("Escenario 4: -0.XXXXXX (negativo Ecuador)", reconstruir_escenario_4),
     ]
 
+    # Lista donde iremos guardando los DataFrames rescatados por cada escenario.
+    # `: list[pd.DataFrame]` indica que es una lista cuyos elementos son DataFrames.
     resultados: list[pd.DataFrame] = []
 
+    # Desempaquetamos cada tupla de la lista en `nombre` (texto) y `fn_reconstruir` (función).
     for nombre, fn_reconstruir in escenarios:
+        # Si los escenarios anteriores ya rescataron TODO, no queda nada que probar:
+        # guardamos una tabla vacía para este escenario y `continue` salta a la siguiente vuelta.
         if len(pendientes) == 0:
             resultados.append(pd.DataFrame())
             continue
 
         # Reconstruir latitud según el escenario
+        # Llamamos a la función del turno actual (escenario 1, luego 2, luego 3, luego 4).
         lat_reconstruida = fn_reconstruir(pendientes["limpia_lat"])
 
         # Validar contra el mapa con sjoin
+        # Nos devuelve los ID_temp cuya latitud reconstruida SÍ cayó en su cantón.
         ids_rescatados = validar_reconstruccion_sjoin(
             pendientes, lat_reconstruida, mapa
         )
 
         # Separar rescatados del pool de pendientes
+        # Equivale a: geo.corregir.1X <- geo.corregir.1 %>% filter(ID.temp %in% correctos3)
         rescatados = pendientes[pendientes["ID_temp"].isin(ids_rescatados)].copy()
 
         # Actualizar lat_num con el valor reparado para los rescatados
+        # ¡Muy importante! Antes tenían la latitud vieja corrupta en lat_num
+        # (ej. 21894.0); aquí la sobreescribimos con la latitud ya reparada (-2.1894).
         if len(rescatados) > 0:
             lat_reparada = fn_reconstruir(rescatados["limpia_lat"])
             rescatados["lat_num"] = pd.to_numeric(lat_reparada, errors="coerce")
 
         # Los rescatados salen del pool
+        # Equivale a: geo.corregir.1 <- geo.corregir.1 %>% filter(!(ID.temp %in% correctos3))
+        # Así en la siguiente vuelta `pendientes` solo tiene los que siguen fallando.
         pendientes = pendientes[~pendientes["ID_temp"].isin(ids_rescatados)].copy()
 
+        # Guardamos la tabla de rescatados de este escenario en la lista.
         resultados.append(rescatados)
         print(f"        {nombre}: {len(rescatados):,} rescatados "
               f"({len(pendientes):,} pendientes)")
 
     # Limpiar columna auxiliar de todos los DataFrames
+    # enumerate(lista) → recorre la lista dándonos posición E ítem: (0, esc1), (1, esc2)...
+    # Usamos `i` para sobreescribir `resultados[i]` sin la columna temporal "limpia_lat".
     for i, r in enumerate(resultados):
         if len(r) > 0 and "limpia_lat" in r.columns:
             resultados[i] = r.drop(columns=["limpia_lat"])
@@ -384,17 +458,18 @@ def reparar_coordenadas_corruptas(
     if len(pendientes) > 0 and "limpia_lat" in pendientes.columns:
         pendientes = pendientes.drop(columns=["limpia_lat"])
 
+    # sum(...) suma la cantidad de filas rescatadas en los 4 escenarios.
     n_total_rescatados = sum(len(r) for r in resultados)
-    n_no_reparados = len(pendientes)
+    n_no_reparados = len(pendientes)  # Lo que quedó en `pendientes` tras los 4 intentos.
 
     print(f"        {'─' * 45}")
     print(f"        Total rescatados: {n_total_rescatados:,} de {n_total:,}")
     print(f"        No reparados: {n_no_reparados:,}")
 
     return (
-        resultados[0],  # Escenario 1
-        resultados[1],  # Escenario 2
-        resultados[2],  # Escenario 3
-        resultados[3],  # Escenario 4
-        pendientes,     # No reparados
+        resultados[0],  # Escenario 1 (índice 0 de la lista)
+        resultados[1],  # Escenario 2 (índice 1 de la lista)
+        resultados[2],  # Escenario 3 (índice 2 de la lista)
+        resultados[3],  # Escenario 4 (índice 3 de la lista)
+        pendientes,     # No reparados (ej. coordenadas 0, 0 irrecuperables)
     )

@@ -13,6 +13,11 @@ Funciones principales:
     - ensamblar_base_final(): Concatena y limpia todos los conjuntos (Paso 4.7)
     - guardar_artefactos_geo(): Exporta Parquet en interim/ y processed/ (Paso 4.8)
     - imprimir_reporte_geo(): Reporte estadístico de efectividad (equivale R Fase 11)
+
+En palabras simples: este módulo vuelve a JUNTAR todas las piezas válidas
+que se separaron durante la Fase 4 (los correctos desde el inicio + los
+reparados por los 4 escenarios + los del limbo), borra las columnas de
+trabajo temporal y guarda la tabla final limpia en disco.
 """
 import pandas as pd
 
@@ -25,6 +30,7 @@ from src.ingesta.config import (
 # Columnas auxiliares creadas durante la validación geoespacial que deben
 # eliminarse del DataFrame final para mantener el esquema limpio.
 # Equivale a: select(-any_of(c("limpia.lat", "lat.1", "lat.leng", ...))) en R
+# El "_" al inicio indica que es una constante interna de este archivo.
 _COLUMNAS_AUXILIARES: list[str] = [
     "latitud_original",   # Cadena original antes de conversión numérica
     "longitud_original",  # Cadena original antes de conversión numérica
@@ -51,7 +57,7 @@ def ensamblar_base_final(
     reparados_esc3: pd.DataFrame,
     reparados_esc4: pd.DataFrame,
     limbo_formato_correcto: pd.DataFrame,
-    no_reparados: pd.DataFrame | None = None,
+    no_reparados: pd.DataFrame | None = None,  # Opcional: solo se usa para imprimir cuántos fueron.
 ) -> pd.DataFrame:
     """
     Consolida todos los conjuntos de datos en la base georreferenciada final.
@@ -103,6 +109,8 @@ def ensamblar_base_final(
     print("  [4.7] Ensamblaje y limpieza final")
 
     # ── Catalogar las partes con sus tamaños ──
+    # Diccionario {nombre: tabla} para poder imprimir el conteo de cada parte
+    # con un solo `for` y luego unir todas sus tablas.
     partes_etiquetadas = {
         "geo_correctos":          geo_correctos,
         "reparados_esc1":         reparados_esc1,
@@ -112,25 +120,34 @@ def ensamblar_base_final(
         "limbo_formato_correcto": limbo_formato_correcto,
     }
 
+    # .items() nos da cada pareja (clave, valor) del diccionario.
     for etiqueta, df_parte in partes_etiquetadas.items():
+        # :<30 = alineado a la izquierda en 30 espacios | :>7, = derecha en 7 con miles.
         print(f"        {etiqueta:<30}: {len(df_parte):>7,}")
 
+    # Si nos pasaron la tabla de no_reparados, mostramos cuántos se descartan.
     if no_reparados is not None:
         print(f"        {'no_reparados (excluidos)':<30}: {len(no_reparados):>7,}")
 
     # ── pd.concat() — equivale a rbind() de R ──
     # Filtramos DataFrames vacíos para evitar warnings en concat()
+    #
+    # Esto es una "comprensión de listas" (list comprehension): una forma
+    # compacta de armar una lista nueva filtrando otra. Se lee en español:
+    #   "dame cada `df` de los valores del diccionario SI ese `df` tiene filas".
     partes_no_vacias = [
         df for df in partes_etiquetadas.values() if len(df) > 0
     ]
 
+    # Si ninguna parte tenía filas, no hay nada que unir → lanzamos error.
     if len(partes_no_vacias) == 0:
         raise ValueError(
             "Todos los DataFrames de entrada están vacíos. "
             "No hay registros para ensamblar."
         )
 
-    # ignore_index=True reinicia el índice secuencialmente — equivale al
+    # pd.concat(lista_de_tablas) → apila las tablas una debajo de otra (verticalmente).
+    # ignore_index=True reinicia el índice secuencialmente (0, 1, 2, ...) — equivale al
     # reindexado implícito que hace R al hacer rbind() sobre data.frames
     df_ensamblado = pd.concat(partes_no_vacias, ignore_index=True)
     print(f"        {'─' * 45}")
@@ -138,12 +155,16 @@ def ensamblar_base_final(
 
     # ── Eliminar columnas auxiliares ──
     # Equivale a: select(-any_of(c("limpia.lat", "lat.1", "lat.leng", ...)))
+    # Primero filtramos cuáles de las columnas auxiliares están realmente presentes
+    # en la tabla (igual que hace any_of() en R, para no fallar si alguna no está).
     cols_presentes = [c for c in _COLUMNAS_AUXILIARES if c in df_ensamblado.columns]
     if cols_presentes:
+        # .drop(columns=...) devuelve la tabla sin esas columnas.
         df_ensamblado = df_ensamblado.drop(columns=cols_presentes)
 
     # ── Forzar tipos numéricos en coordenadas ──
     # Equivale a: mutate(lat.new = as.numeric(lat.new), lon.new = as.numeric(lon.new))
+    # Garantiza que lat_num y lon_num sean números decimales (float64) en toda la tabla.
     df_ensamblado["lat_num"] = pd.to_numeric(
         df_ensamblado["lat_num"], errors="coerce"
     )
@@ -153,6 +174,7 @@ def ensamblar_base_final(
 
     # ── Filtro de integridad final ──
     # Equivale a: filter(!is.na(lat.new) & !is.na(lon.new))
+    # Último candado: si por algún motivo quedó alguna fila con coordenada NaN, se borra.
     n_antes = len(df_ensamblado)
     df_ensamblado = df_ensamblado.dropna(subset=["lat_num", "lon_num"])
     n_despues = len(df_ensamblado)
@@ -196,6 +218,7 @@ def guardar_artefactos_geo(
     print("  [4.8] Exportación de artefactos geoespaciales")
 
     # ── geo_correctos.parquet (interim/) ──
+    # Guardamos aparte los que estaban bien desde el origen (para auditoría).
     INTERIM_GEO_CORRECTOS.parent.mkdir(parents=True, exist_ok=True)
     geo_correctos.to_parquet(INTERIM_GEO_CORRECTOS, index=False, engine="pyarrow")
     tamanio_kb = INTERIM_GEO_CORRECTOS.stat().st_size / 1024
@@ -203,6 +226,7 @@ def guardar_artefactos_geo(
     print(f"        Tamaño: {tamanio_kb:.1f} KB | Registros: {len(geo_correctos):,}")
 
     # ── homi_georreferenciado.parquet (processed/) ──
+    # Guardamos la base completa ya georreferenciada (entrada para la Fase 5).
     ruta_final = PROCESSED_DIR / "homi_georreferenciado.parquet"
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     df_final.to_parquet(ruta_final, index=False, engine="pyarrow")
@@ -247,6 +271,7 @@ def imprimir_reporte_geo(
     n_final : int
         Total de registros en la base georreferenciada final.
     """
+    # Porcentaje de registros que terminaron con coordenadas válidas respecto al total.
     efectividad = (n_final / n_procesados * 100) if n_procesados > 0 else 0.0
 
     print("=" * 60)
@@ -261,4 +286,3 @@ def imprimir_reporte_geo(
     print(f"  {'TOTAL GEORREFERENCIADOS:':<42} {n_final:>7,}")
     print(f"  Efectividad total del pipeline: {efectividad:.2f}%")
     print("=" * 60)
-

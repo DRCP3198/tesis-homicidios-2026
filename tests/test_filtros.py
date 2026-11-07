@@ -10,8 +10,8 @@ Verifica que:
 6. El ciclo Parquet guardar/cargar funcione (Paso 3.6).
 7. NO existan registros > 2024 ni cantones insulares en el resultado (Paso 3.7).
 """
-import pytest
-import pandas as pd
+import pytest        # Framework de pruebas automatizadas.
+import pandas as pd  # Manejo de DataFrames.
 
 from src.ingesta.config import (
     ANIO_MAXIMO,
@@ -32,6 +32,11 @@ from src.reportes.reporte_control import imprimir_conteos
 # =========================================================================
 # FIXTURES: DataFrames simulados para pruebas unitarias
 # =========================================================================
+# `@pytest.fixture` define funciones que preparan datos de prueba reutilizables.
+# Al estar fuera de las clases (a nivel de archivo), CUALQUIER clase de este
+# archivo puede pedirlos simplemente poniendo su nombre como parámetro.
+# Además, un fixture puede pedir a OTRO fixture (ver `df_convertido` y `df_filtrado_anio`),
+# armando una cadena limpia paso por paso.
 @pytest.fixture
 def df_simulado() -> pd.DataFrame:
     """
@@ -39,6 +44,8 @@ def df_simulado() -> pd.DataFrame:
     21 columnas, incluyendo registros de distintos años y cantones
     insulares para validar todos los filtros.
     """
+    # `["HOMICIDIO"] * 8` repite la lista 8 veces → ["HOMICIDIO", "HOMICIDIO", ...] (8 elementos).
+    # `["URBANO", "RURAL"] * 4` → alterna URBANO, RURAL 4 veces = 8 elementos en total.
     return pd.DataFrame({
         # 13 columnas de texto
         "codigo_caso":          ["CASO-001", "CASO-002", "CASO-003", "CASO-004",
@@ -51,13 +58,14 @@ def df_simulado() -> pd.DataFrame:
         "causa_especifica":     ["VENGANZA"] * 8,
         "sexo_victima":         ["MASCULINO"] * 8,
         "nacionalidad_victima": ["ECUATORIANA"] * 8,
+        # Incluye 2 cantones insulares (SANTA CRUZ, ISABELA) para probar la exclusión.
         "canton":               ["QUITO", "GUAYAQUIL", "CUENCA", "SANTA CRUZ",
                                  "ISABELA", "AMBATO", "LOJA", "QUITO"],
         "mes_hecho":            ["ENERO"] * 8,
         "dia_semana":           ["LUNES"] * 8,
         "provincia":            ["PICHINCHA", "GUAYAS", "AZUAY", "GALAPAGOS",
                                  "GALAPAGOS", "TUNGURAHUA", "LOJA", "PICHINCHA"],
-        # 8 columnas no-texto
+        # 8 columnas no-texto (incluye 2 filas del año 2025 para probar el filtro temporal)
         "fecha_hecho":          ["2023-01-15", "2024-06-20", "2025-03-10",
                                  "2023-07-01", "2024-08-15", "2022-12-01",
                                  "2024-11-30", "2025-02-14"],
@@ -77,12 +85,14 @@ def df_simulado() -> pd.DataFrame:
 @pytest.fixture
 def df_convertido(df_simulado: pd.DataFrame) -> pd.DataFrame:
     """DataFrame con anio_hecho ya convertido a entero (salida Paso 3.1)."""
+    # Este fixture recibe `df_simulado` y le aplica el Paso 3.1 automáticamente.
     return convertir_anio_a_entero(df_simulado)
 
 
 @pytest.fixture
 def df_filtrado_anio(df_convertido: pd.DataFrame) -> pd.DataFrame:
     """DataFrame con filtro temporal aplicado (salida Paso 3.2)."""
+    # Y este recibe `df_convertido` y le aplica el Paso 3.2 (quedando listo para el Paso 3.3).
     return filtrar_anio(df_convertido)
 
 
@@ -95,7 +105,8 @@ class TestConvertirAnioAEntero:
     def test_tipo_resultante(self, df_simulado: pd.DataFrame):
         """Verifica que anio_hecho sea de tipo Int64 tras la conversión."""
         resultado = convertir_anio_a_entero(df_simulado)
-        # Int64 (nullable integer) es el tipo esperado
+        # Int64 (nullable integer) es el tipo esperado.
+        # is_integer_dtype(...) devuelve True para cualquier tipo entero de pandas/numpy.
         assert pd.api.types.is_integer_dtype(resultado["anio_hecho"]), (
             f"Se esperaba tipo entero, se obtuvo: {resultado['anio_hecho'].dtype}"
         )
@@ -104,6 +115,7 @@ class TestConvertirAnioAEntero:
         """Verifica que los valores numéricos válidos se preserven."""
         resultado = convertir_anio_a_entero(df_simulado)
         anios_presentes = set(resultado["anio_hecho"].dropna().tolist())
+        # `x in conjunto` → comprueba que el año esté presente.
         assert 2023 in anios_presentes
         assert 2024 in anios_presentes
         assert 2025 in anios_presentes
@@ -115,13 +127,14 @@ class TestConvertirAnioAEntero:
             "canton": ["QUITO"] * 5,
         })
         resultado = convertir_anio_a_entero(df)
-        # "ABC" y None deben haberse eliminado
+        # "ABC" y None deben haberse convertido en NaN y luego eliminado con dropna().
         assert len(resultado) == 3
         assert set(resultado["anio_hecho"].tolist()) == {2023, 2024, 2025}
 
     def test_error_columna_faltante(self):
         """Verifica que lance KeyError si falta la columna anio_hecho."""
         df = pd.DataFrame({"otra_columna": [1, 2, 3]})
+        # Esperamos que la función lance KeyError cuyo mensaje mencione "anio_hecho".
         with pytest.raises(KeyError, match="anio_hecho"):
             convertir_anio_a_entero(df)
 
@@ -134,7 +147,7 @@ class TestConvertirAnioAEntero:
     def test_preserva_conteo_sin_nulos(self, df_simulado: pd.DataFrame):
         """Con datos limpios (sin NaN en anio), no debe eliminar filas."""
         resultado = convertir_anio_a_entero(df_simulado)
-        # Todos los valores en df_simulado son numéricos válidos
+        # Todos los valores en df_simulado son numéricos válidos → entran 8, salen 8.
         assert len(resultado) == len(df_simulado)
 
 
@@ -147,6 +160,7 @@ class TestFiltrarAnio:
     def test_excluye_2025(self, df_convertido: pd.DataFrame):
         """Verifica que NO existan registros con año > 2024."""
         resultado = filtrar_anio(df_convertido)
+        # El valor máximo de la columna no puede superar ANIO_MAXIMO (2024).
         assert resultado["anio_hecho"].max() <= ANIO_MAXIMO, (
             f"Se encontraron registros con año > {ANIO_MAXIMO}: "
             f"máximo encontrado = {resultado['anio_hecho'].max()}"
@@ -156,6 +170,7 @@ class TestFiltrarAnio:
         """Verifica que se conserven registros de 2024 y años anteriores."""
         resultado = filtrar_anio(df_convertido)
         anios = set(resultado["anio_hecho"].tolist())
+        # Importante: el filtro es `<= 2024` (no `< 2024`), así que 2024 SÍ debe quedarse.
         assert 2024 in anios, "Se perdieron registros de 2024"
         assert 2023 in anios, "Se perdieron registros de 2023"
         assert 2022 in anios, "Se perdieron registros de 2022"
@@ -174,6 +189,7 @@ class TestFiltrarAnio:
 
     def test_conteo_esperado(self, df_convertido: pd.DataFrame):
         """Verifica que se eliminen exactamente los registros de 2025."""
+        # Contamos cuántos 2025 había antes y verificamos que falten exactamente esos.
         n_2025 = (df_convertido["anio_hecho"] == 2025).sum()
         resultado = filtrar_anio(df_convertido)
         assert len(resultado) == len(df_convertido) - n_2025
@@ -191,6 +207,7 @@ class TestFiltrarAnio:
 
     def test_error_tipo_no_numerico(self):
         """Verifica que lance ValueError si anio_hecho es string."""
+        # Si alguien olvida llamar primero a convertir_anio_a_entero(), debe avisar con ValueError.
         df = pd.DataFrame({"anio_hecho": ["2023", "2024"]})
         with pytest.raises(ValueError, match="tipo numérico"):
             filtrar_anio(df)
@@ -207,6 +224,8 @@ class TestExcluirGalapagos:
         Paso 3.7 — Verificación crítica:
         Confirma que NINGÚN cantón insular esté en el resultado continental.
         """
+        # El "_" recibe el segundo valor devuelto (df_insular) cuando no lo vamos a usar
+        # en esta prueba; es una convención estándar de Python ("variable descartable").
         df_continental, _ = excluir_galapagos(df_filtrado_anio)
         cantones_insulares_presentes = df_continental[
             df_continental["canton"].isin(CANTONES_GALAPAGOS)
@@ -222,6 +241,7 @@ class TestExcluirGalapagos:
         _, df_insular = excluir_galapagos(df_filtrado_anio)
         if len(df_insular) > 0:
             # Todos los registros insulares deben ser de cantones de Galápagos
+            # (ningún cantón continental se debe haber colado en df_insular).
             for canton in df_insular["canton"].unique():
                 assert canton in CANTONES_GALAPAGOS, (
                     f"El cantón '{canton}' no es insular pero está en df_insular"
@@ -229,6 +249,7 @@ class TestExcluirGalapagos:
 
     def test_suma_partes_igual_total(self, df_filtrado_anio: pd.DataFrame):
         """Verifica que continental + insular = total filtrado."""
+        # Ley de conservación: nada desaparece al partir una tabla en dos.
         df_continental, df_insular = excluir_galapagos(df_filtrado_anio)
         total = len(df_continental) + len(df_insular)
         assert total == len(df_filtrado_anio), (
@@ -242,6 +263,7 @@ class TestExcluirGalapagos:
         df_continental, df_insular = excluir_galapagos(
             df_filtrado_anio, cantones_insular=custom_list
         )
+        # .values devuelve los valores como arreglo; `all(...)` verifica que TODOS sean True.
         assert "QUITO" not in df_continental["canton"].values
         assert all(df_insular["canton"] == "QUITO")
 
@@ -318,6 +340,8 @@ class TestValidacionDatosReales:
     @pytest.fixture
     def pipeline_fase3(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Ejecuta el pipeline completo de Fase 3 sobre datos reales."""
+        # `pytest.skip(...)` salta la prueba (en vez de fallarla) si todavía
+        # no se han generado los archivos de las fases previas.
         if not INTERIM_NORMALIZADO.exists():
             pytest.skip(
                 f"No existe {INTERIM_NORMALIZADO}. "
@@ -372,4 +396,3 @@ class TestValidacionDatosReales:
         """Verifica que no haya NaN en anio_hecho en datos reales."""
         df_continental, _ = pipeline_fase3
         assert df_continental["anio_hecho"].isna().sum() == 0
-
