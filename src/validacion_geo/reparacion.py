@@ -475,6 +475,11 @@ def reparar_coordenadas_corruptas(
     print(f"        Total rescatados: {n_total_rescatados:,} de {n_total:,}")
     print(f"        No reparados: {n_no_reparados:,}")
 
+    # Si quedaron registros sin reparar (excluidos), los imprimimos explícitamente en consola
+    # para que el usuario visualice exactamente qué coordenadas inválidas provocaron su descarte.
+    if n_no_reparados > 0:
+        imprimir_detalle_no_reparados(pendientes)
+
     return (
         resultados[0],  # Escenario 1 (índice 0 de la lista)
         resultados[1],  # Escenario 2 (índice 1 de la lista)
@@ -482,3 +487,54 @@ def reparar_coordenadas_corruptas(
         resultados[3],  # Escenario 4 (índice 3 de la lista)
         pendientes,     # No reparados (ej. coordenadas 0, 0 irrecuperables)
     )
+
+
+# =========================================================================
+# AUDITORÍA EN CONSOLA: Detalle explícito de registros no reparados (excluidos)
+# =========================================================================
+def imprimir_detalle_no_reparados(no_reparados: pd.DataFrame) -> None:
+    """
+    Imprime en consola el listado detallado de los registros cuyas coordenadas
+    no pudieron ser rescatadas por ninguno de los 4 escenarios decimales y que,
+    por lo tanto, quedan excluidos de la base georreferenciada final.
+
+    Parameters
+    ----------
+    no_reparados : pd.DataFrame
+        DataFrame con los registros irrecuperables devueltos al final del Paso 4.6.
+    """
+    if no_reparados is None or len(no_reparados) == 0:
+        return
+
+    print("\n        " + "=" * 86)
+    print(
+        f"        [AUDITORÍA DE EXCLUSIÓN] REGISTROS NO REPARADOS DESCARTADOS ({len(no_reparados):,} fila/s):"
+    )
+    print("        " + "-" * 86)
+    print(
+        f"        {'ID_temp':<8} | {'Caso':<8} | {'Fecha':<10} | "
+        f"{'Provincia':<12} | {'Cantón':<16} | {'Lat original':<12} | {'Lon original':<12}"
+    )
+    print("        " + "-" * 86)
+
+    # Recorremos cada fila descartada mostrando sus campos identificadores y sus coordenadas crudas.
+    for _, fila in no_reparados.iterrows():
+        id_temp = str(fila.get("ID_temp", "N/A"))
+        caso = str(fila.get("codigo_caso", "N/A"))
+        fecha = str(fila.get("fecha_hecho", "N/A"))[:10]
+        prov = str(fila.get("provincia", "N/A"))
+        canton = str(fila.get("canton", "N/A"))
+        lat_raw = str(fila.get("latitud_original", fila.get("latitud", fila.get("lat_num", "N/A"))))
+        lon_raw = str(fila.get("longitud_original", fila.get("longitud", fila.get("lon_num", "N/A"))))
+
+        print(
+            f"        {id_temp:<8} | {caso:<8} | {fecha:<10} | "
+            f"{prov:<12} | {canton:<16} | {lat_raw:<12} | {lon_raw:<12}"
+        )
+
+    print("        " + "-" * 86)
+    print(
+        "        Motivo: Coordenadas nulas o en origen (0, 0 — Golfo de Guinea), sin dígitos "
+        "geográficos válidos para reconstruir."
+    )
+    print("        " + "=" * 86 + "\n")

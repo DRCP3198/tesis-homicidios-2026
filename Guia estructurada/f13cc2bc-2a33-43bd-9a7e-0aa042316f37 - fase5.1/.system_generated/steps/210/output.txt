@@ -1,0 +1,15 @@
+Command exited with code 0.
+
+Command output:
+edad non-integer count: 101 min: 0.0 max: 102.0
+GPKG roundtrip OK! Columns: ['codigo_caso', 'tipo_delito', 'fecha_hecho', 'anio_hecho', 'edad_victima', 'hora_aproximada', 'latitud', 'longitud', 'geometry']
+codigo_caso                object
+tipo_delito                object
+fecha_hecho        datetime64[ms]
+anio_hecho                  int64
+edad_victima              float64
+hora_aproximada           float64
+latitud                   float64
+longitud                  float64
+geometry                 geometry
+dtype: object

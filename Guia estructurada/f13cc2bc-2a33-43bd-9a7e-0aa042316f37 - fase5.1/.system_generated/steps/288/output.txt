@@ -1,0 +1,5 @@
+Command exited with code 0.
+
+Command output:
+Standalone integridad_ok: True
+Standalone counts: 47739 38566 38166 399 0 1 38565

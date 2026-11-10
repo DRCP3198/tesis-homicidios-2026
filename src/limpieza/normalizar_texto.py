@@ -24,12 +24,135 @@ Funciones principales:
 import pandas as pd
 
 from src.ingesta.config import (
-    COLUMNAS_TEXTO_NORMALIZAR,  # Lista de las 13 columnas de texto
-    INTERIM_NORMALIZADO,        # Ruta de salida: data/interim/homi_normalizado.parquet
-    INTERIM_RENOMBRADO,         # Ruta de entrada: data/interim/homi_renombrado.parquet
+    COLUMNAS_TEXTO_NORMALIZAR,     # Lista de las 13 columnas de texto
+    INTERIM_NORMALIZADO,           # Ruta de salida: data/interim/homi_normalizado.parquet
+    INTERIM_RENOMBRADO,            # Ruta de entrada: data/interim/homi_renombrado.parquet
+    MAPEO_HOMOLOGACION_CANTONES,   # Diccionario {(provincia, canton_variante): canton_oficial}
 )
 # Reutilizamos la función que limpia una columna completa (ver src/utils/texto.py).
 from src.utils.texto import normalizar_columna
+
+
+# =========================================================================
+# FUNCIÓN AUXILIAR: Homologación de variantes y errores de tipeo en cantones
+# =========================================================================
+def homologar_cantones_por_provincia(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Homologa las variantes de escritura de cantones en el DataFrame de
+    homicidios desambiguando por la tupla `(provincia, canton)`, e imprime
+    en consola el resumen estadístico y una muestra explícita de las filas
+    corregidas.
+
+    ¿Por qué desambiguar usando `(provincia, canton)` en lugar de solo `canton`?
+        El caso crítico es `"SAN MIGUEL DE SALCEDO"`, que aparece registrado en
+        dos provincias distintas:
+          1. En `"COTOPAXI"`, corresponde al cantón cuyo nombre oficial en la
+             cartografía INEC (`DPA_DESCAN`) es `"SALCEDO"` (3 registros).
+          2. En `"BOLIVAR"`, corresponde a un error de tipeo policial para un
+             hecho ocurrido físicamente en el cantón `"SAN MIGUEL"` de Bolívar
+             (1 registro, `codigo_caso=92067`, coords `-1.7061, -79.11753`).
+        Asimismo, unifica variantes de espacio o nombre histórico largo:
+          • `("LOS RIOS", "PUEBLO VIEJO")` → `"PUEBLOVIEJO"`
+          • `("ORELLANA", "PUERTO FRANCISCO DE ORELLANA")` → `"ORELLANA"`
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame con las columnas `"provincia"` y `"canton"` ya pasadas por
+        `normalizar_columna()` (en MAYÚSCULAS y sin tildes).
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame con la columna `"canton"` homologada al estándar del INEC.
+    """
+    # Si por alguna razón el DataFrame de prueba no tiene ambas columnas, salimos sin cambios.
+    if "provincia" not in df.columns or "canton" not in df.columns:
+        return df
+
+    total_homologados = 0
+    muestras_consola: list[dict[str, str]] = []
+    resumen_pares: list[tuple[str, str, str, int]] = []
+
+    # Recorremos cada regla del diccionario:
+    #   • `(prov_objetivo, canton_erroneo)` es la tupla clave.
+    #   • `canton_oficial` es el nombre estandarizado según el shapefile del INEC.
+    for (prov_objetivo, canton_erroneo), canton_oficial in MAPEO_HOMOLOGACION_CANTONES.items():
+        # Creamos una máscara booleana (Serie de True/False) que exige que AMBAS
+        # condiciones se cumplan en la misma fila: misma provincia Y mismo cantón variante.
+        mascara = (df["provincia"] == prov_objetivo) & (df["canton"] == canton_erroneo)
+        n_afectados = int(mascara.sum())
+
+        if n_afectados > 0:
+            resumen_pares.append((prov_objetivo, canton_erroneo, canton_oficial, n_afectados))
+            total_homologados += n_afectados
+
+            # Extraemos hasta 2 filas de muestra por cada caso para enseñarlas en consola
+            # ANTES de sobrescribir el valor de la columna `"canton"`.
+            filas_muestra = df.loc[mascara].head(2)
+            for _, fila in filas_muestra.iterrows():
+                muestras_consola.append({
+                    "codigo_caso": str(fila.get("codigo_caso", "N/A")),
+                    "fecha_hecho": str(fila.get("fecha_hecho", "N/A"))[:10],
+                    "provincia": prov_objetivo,
+                    "canton_antes": canton_erroneo,
+                    "canton_despues": canton_oficial,
+                    "coords": f"({fila.get('latitud', '?')}, {fila.get('longitud', '?')})",
+                })
+
+            # `.loc[mascara, "canton"] = canton_oficial` actualiza únicamente las filas
+            # donde `mascara` es True en la columna `"canton"`.
+            df.loc[mascara, "canton"] = canton_oficial
+
+    # Si hubo registros corregidos, imprimimos la tabla resumen y las filas de ejemplo en consola.
+    if total_homologados > 0:
+        print("-" * 60)
+        print("  [2.1] HOMOLOGACIÓN DE VARIANTES Y ERRORES DE TIPEO EN CANTONES")
+        print("-" * 60)
+        print(
+            f"  {'Provincia':<12} | {'Cantón original (variante)':<30} | "
+            f"{'Cantón oficial INEC':<14} | {'Filas':>6}"
+        )
+        print("  " + "-" * 70)
+        for prov, c_ant, c_nue, conteo in resumen_pares:
+            print(f"  {prov:<12} | {c_ant:<30} | {c_nue:<14} | {conteo:>6,}")
+        print("  " + "-" * 70)
+        print(f"  Total de registros homologados por (provincia, cantón): {total_homologados:,}")
+
+        print("\n  Muestra de registros corregidos (incluye desambiguación Cotopaxi vs. Bolívar):")
+        print(
+            f"  {'Caso':<8} | {'Fecha':<10} | {'Provincia':<10} | "
+            f"{'Antes → Después':<42} | {'Coordenadas (lat, lon)'}"
+        )
+        print("  " + "-" * 98)
+        for m in muestras_consola:
+            transicion = f"{m['canton_antes']} -> {m['canton_despues']}"
+            print(
+                f"  {m['codigo_caso']:<8} | {m['fecha_hecho']:<10} | {m['provincia']:<10} | "
+                f"{transicion:<42} | {m['coords']}"
+            )
+
+    # También mostramos una muestra informativa de cantones con "Ñ" (RUMINAHUI y LOGRONO)
+    # que en el CSV se normalizan con "N" y que ahora empatarán con el shapefile reparado.
+    mascara_ene = df["canton"].isin(["RUMINAHUI", "LOGRONO"])
+    if mascara_ene.any():
+        conteo_ene = df.loc[mascara_ene, "canton"].value_counts().to_dict()
+        resumen_ene = ", ".join(f"{k}: {v:,} filas" for k, v in conteo_ene.items())
+        print(f"\n  [INFO Ñ→N] Cantones normalizados que empatan con SHP reparado: {resumen_ene}")
+        muestra_ene = (
+            df.loc[mascara_ene]
+            .groupby("canton", as_index=False)
+            .first()
+        )
+        for _, fila in muestra_ene.iterrows():
+            print(
+                f"             • Ejemplo {fila.get('provincia', '')} - {fila['canton']}: "
+                f"codigo_caso={fila.get('codigo_caso', 'N/A')}, "
+                f"fecha={str(fila.get('fecha_hecho', 'N/A'))[:10]}, "
+                f"coords=({fila.get('latitud', '?')}, {fila.get('longitud', '?')})"
+            )
+
+    return df
 
 
 # =========================================================================
@@ -103,12 +226,18 @@ def normalizar_todas_columnas(df: pd.DataFrame) -> pd.DataFrame:
         # {'':25} → imprime un texto vacío de 25 espacios (solo para alinear).
         print(f"       {'':25} | Después: {list(valores_despues)}")
 
+    # ── Paso 2.1: Homologar variantes y errores de tipeo en cantones por provincia ──
+    # Desambigua casos como ("COTOPAXI", "SAN MIGUEL DE SALCEDO") -> "SALCEDO" vs.
+    # ("BOLIVAR", "SAN MIGUEL DE SALCEDO") -> "SAN MIGUEL", y unifica "PUEBLO VIEJO" -> "PUEBLOVIEJO"
+    # y "PUERTO FRANCISCO DE ORELLANA" -> "ORELLANA".
+    df = homologar_cantones_por_provincia(df)
+
     print("-" * 60)
     print(f"  Columnas normalizadas: {len(COLUMNAS_TEXTO_NORMALIZAR)}")
     print(f"  Total registros: {len(df):,}")  # {:,} = separador de miles
     print("=" * 60)
 
-    return df  # Devolvemos la tabla con las 13 columnas ya limpias.
+    return df  # Devolvemos la tabla con las 13 columnas ya limpias y cantones homologados.
 
 
 # =========================================================================

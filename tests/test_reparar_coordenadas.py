@@ -625,3 +625,14 @@ class TestPipelineCompletoReal:
             f"Se encontraron {len(interseccion)} IDs en ambos grupos: "
             f"{list(interseccion)[:5]}"
         )
+
+    def test_shapefile_ruminahui_y_logrono_reparados(self, mapa_cantonal):
+        """
+        Verifica que la reparación de bytes corruptos ('Ð' -> 'N') en el shapefile
+        produzca 'RUMINAHUI' y 'LOGRONO' en lugar de 'RUMIDAHUI' y 'LOGRODO'.
+        """
+        cantones_mapa = set(mapa_cantonal["CANTON_MAPA"].unique())
+        assert "RUMINAHUI" in cantones_mapa
+        assert "LOGRONO" in cantones_mapa
+        assert "RUMIDAHUI" not in cantones_mapa
+        assert "LOGRODO" not in cantones_mapa

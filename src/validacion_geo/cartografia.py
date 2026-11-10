@@ -26,13 +26,91 @@ import geopandas as gpd
 import pandas as pd
 
 from src.ingesta.config import (
-    ARCHIVO_SHAPEFILE_CANTONES,  # data/raw/cartografia/nxcantones.shp
-    CRS_OBJETIVO,               # 4326 (WGS84)
-    PROVINCIAS_EXCLUIR_MAPA,    # ['GALAPAGOS', 'ZONA NO DELIMITADA']
+    ARCHIVO_SHAPEFILE_CANTONES,     # data/raw/cartografia/nxcantones.shp
+    CRS_OBJETIVO,                   # 4326 (WGS84)
+    MAPEO_CARACTERES_CORRUPTOS_SHP, # {'Ð': 'N', 'ð': 'n'} (corrección de Ñ corrupta en shapefile)
+    PROVINCIAS_EXCLUIR_MAPA,        # ['GALAPAGOS', 'ZONA NO DELIMITADA']
 )
 # Reutilizamos la MISMA función de limpieza de texto de la Fase 2, para que
 # los nombres del mapa queden idénticos a los de la base de datos.
 from src.utils.texto import normalizar_texto
+
+
+# =========================================================================
+# FUNCIÓN AUXILIAR: Reparación de bytes corruptos en nombres del Shapefile
+# =========================================================================
+def reparar_codificacion_shapefile(mapa: gpd.GeoDataFrame) -> pd.Series:
+    """
+    Corrige caracteres con codificación corrupta en la columna `DPA_DESCAN`
+    del shapefile antes de aplicar `normalizar_texto()`, e imprime en consola
+    una muestra explícita de los cantones reparados.
+
+    ¿Por qué es necesario este paso?
+        En `nxcantones.shp`, la letra "Ñ" quedó almacenada como el carácter
+        islandés "Ð" (Eth mayúscula, U+00D0) en "RUMIÐAHUI" y "LOGROÐO".
+        Cuando `unidecode("Ð")` intenta transliterar ese carácter a ASCII,
+        lo convierte en "D" ("RUMIDAHUI", "LOGRODO"), provocando que ningún
+        homicidio de Rumiñahui ("RUMINAHUI") o Logroño ("LOGRONO") coincida
+        con su polígono en el `sjoin`. Al sustituir "Ð" → "N" primero, el
+        nombre normalizado queda en "RUMINAHUI" y "LOGRONO".
+
+    Parameters
+    ----------
+    mapa : gpd.GeoDataFrame
+        GeoDataFrame recién leído del archivo `.shp` con columnas
+        `DPA_DESPRO` y `DPA_DESCAN`.
+
+    Returns
+    -------
+    pd.Series
+        Serie de texto con los nombres de `DPA_DESCAN` ya reparados y
+        normalizados en mayúsculas ASCII sin tildes (`CANTON_MAPA`).
+    """
+    # Convertimos la columna original a tipo string de Pandas para manipular texto de forma segura.
+    serie_original = mapa["DPA_DESCAN"].astype(str)
+
+    # Construimos una expresión regular uniendo las claves corruptas del diccionario (ej. "Ð|ð").
+    # `"|".join(...)` une los caracteres con el operador OR ("|") de expresiones regulares.
+    patron_corrupto = "|".join(MAPEO_CARACTERES_CORRUPTOS_SHP.keys())
+
+    # `.str.contains(patron_corrupto, na=False)` devuelve True en las filas que tienen el carácter corrupto.
+    mascara_corruptos = serie_original.str.contains(patron_corrupto, regex=True, na=False)
+
+    # Aplicamos el reemplazo de cada carácter corrupto ("Ð" → "N", "ð" → "n") sobre toda la serie.
+    serie_reparada = serie_original.copy()
+    for char_corrupto, char_limpio in MAPEO_CARACTERES_CORRUPTOS_SHP.items():
+        # `regex=False` hace reemplazo literal carácter por carácter (más rápido y seguro).
+        serie_reparada = serie_reparada.str.replace(
+            char_corrupto, char_limpio, regex=False
+        )
+
+    # Finalmente pasamos cada nombre reparado por `normalizar_texto` (strip + upper + unidecode).
+    canton_mapa = serie_reparada.map(normalizar_texto)
+
+    # Si detectamos filas con el carácter corrupto, imprimimos la muestra explícita en consola
+    # para que el analista verifique visualmente cómo habría fallado sin la corrección.
+    if mascara_corruptos.any():
+        print("-" * 60)
+        print("  [AUDITORÍA SHP] Corrección de caracteres corruptos en DPA_DESCAN:")
+        print(
+            f"  {'Provincia (SHP)':<18} | {'DPA_DESCAN (Crudo)':<14} | "
+            f"{'Sin corrección':<14} | {'CANTON_MAPA (Corregido)':<14}"
+        )
+        print("  " + "-" * 66)
+        # Iteramos únicamente por las filas afectadas (`mapa.loc[mascara_corruptos]`).
+        for idx, fila in mapa.loc[mascara_corruptos].iterrows():
+            prov_raw = str(fila.get("DPA_DESPRO", ""))
+            can_raw = str(fila["DPA_DESCAN"])
+            # Simulamos qué habría devuelto `normalizar_texto` directo sin corregir "Ð" → "N".
+            sin_correccion = normalizar_texto(can_raw)
+            con_correccion = canton_mapa.loc[idx]
+            print(
+                f"  {prov_raw:<18} | {can_raw:<14} | "
+                f"{sin_correccion:<14} | {con_correccion:<14}"
+            )
+        print("-" * 60)
+
+    return canton_mapa
 
 
 # =========================================================================
@@ -137,13 +215,14 @@ def cargar_mapa_cantonal(
     # ── Paso 4.2a: Crear columna CANTON_MAPA normalizada ──
     # Equivale a: mutate(CANTON_MAPA = iconv(str_to_upper(str_trim(DPA_DESCAN)),
     #                                        to = "ASCII//TRANSLIT"))
-    # Aplica strip() + upper() + unidecode() usando la misma función
-    # normalizar_texto() de src/utils/texto.py (ya usada en Fase 2).
+    # Aplica reparación de bytes corruptos ('Ð' → 'N' en RUMIÐAHUI / LOGROÐO)
+    # seguida de strip() + upper() + unidecode() usando normalizar_texto()
+    # de src/utils/texto.py (ya usada en Fase 2).
     #
     # DPA_DESCAN = columna del shapefile con el nombre del cantón.
-    # .map(normalizar_texto) → aplica la función a cada nombre, uno por uno.
-    # El resultado se guarda en una columna NUEVA llamada CANTON_MAPA.
-    mapa["CANTON_MAPA"] = mapa["DPA_DESCAN"].map(normalizar_texto)
+    # reparar_codificacion_shapefile(mapa) → repara 'Ð', imprime la muestra
+    # en consola y devuelve la serie normalizada para CANTON_MAPA.
+    mapa["CANTON_MAPA"] = reparar_codificacion_shapefile(mapa)
     # .nunique() → número de cantones distintos.
     print(f"  Cantones en mapa (total): {mapa['CANTON_MAPA'].nunique()}")
 

@@ -1,0 +1,44 @@
+Command exited with code 1.
+
+Command output:
+Traceback (most recent call last):
+  File "<string>", line 18, in <module>
+    join_limbo = gpd.sjoin(limbo, mapa[['CANTON_MAPA', 'DPA_DESPRO', 'geometry']], how='left', predicate='intersects')
+  File "D:\Tesis\.venv\Lib\site-packages\geopandas\tools\sjoin.py", line 129, in sjoin
+    _basic_checks(left_df, right_df, how, lsuffix, rsuffix, on_attribute=on_attribute)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Tesis\.venv\Lib\site-packages\geopandas\tools\sjoin.py", line 179, in _basic_checks
+    raise ValueError(f"'left_df' should be GeoDataFrame, got {type(left_df)}")
+ValueError: 'left_df' should be GeoDataFrame, got <class 'pandas.core.frame.DataFrame'>
+============================================================
+  FASE 4.1–4.2: CARGA Y HOMOLOGACIÓN CARTOGRÁFICA
+============================================================
+  Leyendo shapefile: D:\Tesis\data\raw\cartografia\nxcantones.shp
+  Polígonos cargados: 224
+  CRS original: EPSG:32717
+  Columnas: ['DPA_VALOR', 'DPA_ANIO', 'DPA_CANTON', 'DPA_DESCAN', 'DPA_PROVIN', 'DPA_DESPRO', 'geometry']
+  CRS reproyectado: EPSG:4326
+  Geometrías reparadas: 1 (antes) → 0 (despues)
+  Cantones en mapa (total): 222
+  Excluidos (Galápagos + Zona No Delim.): 6
+  Cantones continental final: 216
+============================================================
+  [4.3] Creación de puntos geoespaciales
+        Registros entrada: 38,566
+        NaN en latitud:  0
+        NaN en longitud: 0
+        Registros con coordenadas válidas: 38,566
+        GeoDataFrame creado: 38,566 puntos en EPSG:4326
+  [4.4] Auditoría topológica: punto-en-polígono (sjoin vectorizado)
+        Total puntos evaluados: 38,566
+        Correctos (dentro de su cantón): 38,166 (98.96%)
+        A corregir (fuera de su cantón): 400 (1.04%)
+  [4.5] Separación por formato de coordenadas
+        Con punto decimal (limbo): 399
+        Sin punto decimal (reparar): 1
+
+================ 1. EL CASO IRREVERSIBLE (SIN PUNTO DECIMAL) ================
+       ID_temp codigo_caso fecha_hecho provincia          canton zona_tipo lugar_especifico latitud longitud  lat_num  lon_num
+30878    30879       96547  2024-10-07    MANABI  MANGA DEL CURA    URBANO             OTRO       0        0      0.0      0.0
+
+================ 2. RADIOGRAFIA DE LOS 399 CASOS DEL LIMBO ================

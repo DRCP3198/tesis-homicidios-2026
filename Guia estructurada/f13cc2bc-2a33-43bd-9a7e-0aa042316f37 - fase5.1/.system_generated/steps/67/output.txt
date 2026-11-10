@@ -1,0 +1,6 @@
+Command exited with code 0.
+
+Command output:
+In data but NOT in map: ['EL ORO', 'GUAYAS', 'LOGRONO', 'MANABI', 'PUEBLO VIEJO', 'PUERTO FRANCISCO DE ORELLANA', 'RUMINAHUI', 'SAN MIGUEL DE SALCEDO']
+
+In map but NOT in data: ['ISABELA', 'LOGRODO', 'MARCABELI', 'ONA', 'PENIPE', 'QUERO', 'RUMIDAHUI', 'SAN CRISTOBAL', 'SAN PEDRO DE HUACA', 'SANTA CRUZ']

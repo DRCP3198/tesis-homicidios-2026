@@ -1,0 +1,35 @@
+Command exited with code 0.
+
+Command output:
+=== 1. En el SHAPEFILE (nxcantones.shp): como se llaman estos cantones? ===
+DPA_PROVIN      DPA_DESPRO DPA_CANTON               DPA_DESCAN
+        02         BOLIVAR       0205               SAN MIGUEL
+        05        COTOPAXI       0505                  SALCEDO
+        10        IMBABURA       1006    SAN MIGUEL DE URCUQUI
+        17       PICHINCHA       1705                RUMIÐAHUI
+        17       PICHINCHA       1707 SAN MIGUEL DE LOS BANCOS
+        22        ORELLANA       2201                 ORELLANA
+        12        LOS RIOS       1204              PUEBLOVIEJO
+        14 MORONA SANTIAGO       1410                  LOGROÐO
+
+=== 2. En el CSV (homi_filtrado_2024): como vienen provincia y canton para estos nombres? ===
+      provincia                       canton  total_filas
+        BOLIVAR                   SAN MIGUEL           25
+        BOLIVAR        SAN MIGUEL DE SALCEDO            1
+       COTOPAXI                      SALCEDO           52
+       COTOPAXI        SAN MIGUEL DE SALCEDO            3
+       IMBABURA        SAN MIGUEL DE URCUQUI           17
+       LOS RIOS                 PUEBLO VIEJO           94
+       LOS RIOS                  PUEBLOVIEJO          276
+MORONA SANTIAGO                      LOGRONO            7
+       ORELLANA                     ORELLANA          131
+       ORELLANA PUERTO FRANCISCO DE ORELLANA           61
+      PICHINCHA                    RUMINAHUI           64
+      PICHINCHA     SAN MIGUEL DE LOS BANCOS           14
+
+=== 3. Detalle de SAN MIGUEL DE SALCEDO en el CSV (Cotopaxi vs Bolivar) ===
+     codigo_caso fecha_hecho provincia                 canton   latitud   longitud
+830        92067  2024-05-20   BOLIVAR  SAN MIGUEL DE SALCEDO   -1.7061  -79.11753
+1747       92611  2024-06-06  COTOPAXI  SAN MIGUEL DE SALCEDO  -1.07236  -78.59765
+1755       96449  2024-10-06  COTOPAXI  SAN MIGUEL DE SALCEDO   -1.0383  -78.59087
+1764       98653  2024-12-07  COTOPAXI  SAN MIGUEL DE SALCEDO  -1.02715  -78.58476

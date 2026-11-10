@@ -17,7 +17,10 @@ from src.utils.texto import (
     PATRON_CARACTERES_ESPECIALES,
 )
 from src.ingesta.config import COLUMNAS_TEXTO_NORMALIZAR
-from src.limpieza.normalizar_texto import normalizar_todas_columnas
+from src.limpieza.normalizar_texto import (
+    homologar_cantones_por_provincia,
+    normalizar_todas_columnas,
+)
 from src.reportes.auditoria_caracteres import auditar_caracteres_especiales
 
 
@@ -269,3 +272,51 @@ class TestAuditoriaCaracteres:
         df = pd.DataFrame({"canton": ["QUITO"]})
         with pytest.raises(KeyError, match="Columnas no encontradas"):
             auditar_caracteres_especiales(df, columnas=["inexistente"])
+
+
+# =========================================================================
+# TESTS DE HOMOLOGACIÓN TOPONÍMICA: homologar_cantones_por_provincia()
+# =========================================================================
+class TestHomologacionCantonesPorProvincia:
+    """
+    Verifica la homologación de variantes de escritura de cantones desambiguando
+    por la pareja (provincia, canton), especialmente el caso crítico de
+    'SAN MIGUEL DE SALCEDO' en Cotopaxi ('SALCEDO') vs. Bolívar ('SAN MIGUEL').
+    """
+
+    def test_desambigua_san_miguel_de_salcedo_cotopaxi_vs_bolivar(self):
+        """
+        En COTOPAXI 'SAN MIGUEL DE SALCEDO' debe pasar a 'SALCEDO', mientras
+        que en BOLIVAR debe pasar a 'SAN MIGUEL'.
+        """
+        df = pd.DataFrame({
+            "codigo_caso": ["92611", "92067"],
+            "fecha_hecho": ["2024-06-15", "2024-05-20"],
+            "provincia":   ["COTOPAXI", "BOLIVAR"],
+            "canton":      ["SAN MIGUEL DE SALCEDO", "SAN MIGUEL DE SALCEDO"],
+            "latitud":     ["-1.0715", "-1.7061"],
+            "longitud":    ["-78.5908", "-79.1175"],
+        })
+        resultado = homologar_cantones_por_provincia(df.copy())
+        assert resultado.loc[0, "canton"] == "SALCEDO"
+        assert resultado.loc[1, "canton"] == "SAN MIGUEL"
+
+    def test_homologa_pueblo_viejo_y_orellana(self):
+        """
+        Verifica 'PUEBLO VIEJO' -> 'PUEBLOVIEJO' en Los Ríos y
+        'PUERTO FRANCISCO DE ORELLANA' -> 'ORELLANA' en Orellana.
+        """
+        df = pd.DataFrame({
+            "provincia": ["LOS RIOS", "ORELLANA", "PICHINCHA"],
+            "canton": [
+                "PUEBLO VIEJO",
+                "PUERTO FRANCISCO DE ORELLANA",
+                "RUMINAHUI",
+            ],
+        })
+        resultado = homologar_cantones_por_provincia(df.copy())
+        assert resultado["canton"].tolist() == [
+            "PUEBLOVIEJO",
+            "ORELLANA",
+            "RUMINAHUI",
+        ]

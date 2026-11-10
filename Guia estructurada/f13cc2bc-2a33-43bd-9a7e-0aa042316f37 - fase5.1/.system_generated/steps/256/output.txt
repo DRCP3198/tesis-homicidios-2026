@@ -1,0 +1,20 @@
+Command exited with code 0.
+
+Command output:
+============================================================
+  FASE 4.1–4.2: CARGA Y HOMOLOGACIÓN CARTOGRÁFICA
+============================================================
+  Leyendo shapefile: D:\Tesis\data\raw\cartografia\nxcantones.shp
+  Polígonos cargados: 224
+  CRS original: EPSG:32717
+  Columnas: ['DPA_VALOR', 'DPA_ANIO', 'DPA_CANTON', 'DPA_DESCAN', 'DPA_PROVIN', 'DPA_DESPRO', 'geometry']
+  CRS reproyectado: EPSG:4326
+  Geometrías reparadas: 1 (antes) → 0 (despues)
+  Cantones en mapa (total): 222
+  Excluidos (Galápagos + Zona No Delim.): 6
+  Cantones continental final: 216
+============================================================
+Map bounds (minx, miny, maxx, maxy): [-81.0836839   -5.01615732 -75.18714656   1.4539819 ]
+Points lon min/max: -80.990349 -75.424689
+Points lat min/max: -4.974055 1.36965
+Points outside map bbox +-0.5 deg: 0

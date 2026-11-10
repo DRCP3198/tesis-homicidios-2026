@@ -1,0 +1,17 @@
+Command exited with code 0.
+
+Command output:
+  [4.3] Creación de puntos geoespaciales
+        Registros entrada: 38,566
+        NaN en latitud:  0
+        NaN en longitud: 0
+        Registros con coordenadas válidas: 38,566
+        GeoDataFrame creado: 38,566 puntos en EPSG:4326
+  [4.4] Auditoría topológica: punto-en-polígono (sjoin vectorizado)
+        Total puntos evaluados: 38,566
+        Correctos (dentro de su cantón): 38,396 (99.56%)
+        A corregir (fuera de su cantón): 170 (0.44%)
+  [4.5] Separación por formato de coordenadas
+        Con punto decimal (limbo): 169
+        Sin punto decimal (reparar): 1
+Nuevos geo_correctos: 38396 Nuevos limbo: 169 Sin decimal: 1

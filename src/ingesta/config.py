@@ -169,6 +169,45 @@ COLUMNAS_TEXTO_NORMALIZAR = [
 # latitud, longitud, AUX_HORA_SISTEMA y AUX_MINUTO_SISTEMA no se tratan por el momento
 
 
+# =========================================================================
+# HOMOLOGACIÓN TOPONÍMICA: SHAPEFILE Y VARIANTES DE CANTONES (Fases 2 y 4)
+# =========================================================================
+# 1. Corrección de codificación corrupta en el shapefile cartográfico (`nxcantones.shp`):
+#    En la tabla de atributos original del INEC (`DPA_DESCAN`), la letra "Ñ" quedó grabada
+#    con un byte corrupto "Ð" (letra islandesa Eth, código Unicode U+00D0) en dos cantones:
+#      • "RUMIÐAHUI" (Pichincha)
+#      • "LOGROÐO"   (Morona Santiago)
+#    Si pasamos "RUMIÐAHUI" directamente por `unidecode()`, la librería translitera "Ð" → "D",
+#    produciendo "RUMIDAHUI" y "LOGRODO", los cuales NO coinciden con "RUMINAHUI" ni "LOGRONO"
+#    de la base de homicidios. Reemplazando "Ð" → "N" ANTES de normalizar, ambos quedan idénticos.
+MAPEO_CARACTERES_CORRUPTOS_SHP: dict[str, str] = {
+    "Ð": "N",
+    "ð": "n",
+}
+
+# 2. Homologación de variantes de escritura de cantones en la base de homicidios:
+#    En los registros policiales existen variantes de tipeo o nombres históricos largos para
+#    ciertos cantones que en el clasificador cartográfico oficial (DPA del INEC) tienen otro
+#    nombre corto o unido.
+#
+#    ¿Por qué la CLAVE del diccionario es una TUPLA `(provincia, canton_erroneo)` y no solo el cantón?
+#    Porque el nombre "SAN MIGUEL DE SALCEDO" aparece digitado en DOS provincias distintas con
+#    significados geográficos diferentes:
+#      • En COTOPAXI, "SAN MIGUEL DE SALCEDO" es el nombre completo del cantón cuyo nombre oficial
+#        en el mapa del INEC es "SALCEDO" (coordenadas ~ -1.04, -78.59).
+#      • En BOLIVAR, existe un registro digitado por error como "SAN MIGUEL DE SALCEDO", pero sus
+#        coordenadas GPS (-1.7061, -79.11753) y su provincia pertenecen al cantón "SAN MIGUEL"
+#        (San Miguel de Bolívar).
+#    Usar la pareja `(provincia, canton)` evita mezclar ambos cantones y asigna a cada uno su
+#    nombre oficial exacto según la jurisdicción provincial donde ocurrió el hecho.
+MAPEO_HOMOLOGACION_CANTONES: dict[tuple[str, str], str] = {
+    ("LOS RIOS", "PUEBLO VIEJO"):                "PUEBLOVIEJO",
+    ("ORELLANA", "PUERTO FRANCISCO DE ORELLANA"): "ORELLANA",
+    ("COTOPAXI", "SAN MIGUEL DE SALCEDO"):        "SALCEDO",
+    ("BOLIVAR",  "SAN MIGUEL DE SALCEDO"):        "SAN MIGUEL",
+}
+
+
 
 # =========================================================================
 # ESQUEMA CONSOLIDADO DE 21 COLUMNAS FINALES (Fase 5)
