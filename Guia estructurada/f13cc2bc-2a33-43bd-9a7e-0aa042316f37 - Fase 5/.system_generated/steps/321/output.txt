@@ -1,0 +1,49 @@
+Command exited with code 0.
+
+Command output:
+  [5.5] Generando reporte estadístico de control y efectividad del pipeline
+        Reporte JSON guardado: D:\Tesis\reports\auditoria_pipeline.json
+        Reporte Markdown guardado: D:\Tesis\reports\auditoria_pipeline.md
+====================================================================
+  AUDITORÍA ESTADÍSTICA INTEGRAL DEL PIPELINE (FASES 1 A 5)
+====================================================================
+  1. CICLO DE VIDA DE REGISTROS                            Conteo
+  ------------------------------------------------ --------------
+  Registros brutos iniciales (Fase 1)                      47,739
+  (-) Excluidos filtro temporal (> 2024)                    9,171
+  (-) Excluidos filtro insular (Galápagos)                      2
+  (=) Universo continental 2010-2024 (Fase 3)              38,566
+  ------------------------------------------------ --------------
+  2. AUDITORÍA Y RESCATE GEOESPACIAL (Fase 4)     
+  (+) Correctos en 1ra auditoría topológica                38,166
+  (+) Rescatados por algoritmo decimal (4 esc.)                 0
+  (+) Limbo con formato decimal retenidos                     399
+  (-) Coordenadas descartadas irreversibles                     1
+  ------------------------------------------------ --------------
+  (=) REGISTROS FINALES ETIQUETADOS (Fase 5)               38,565
+  Columnas limpias seleccionadas                               21
+  Provincias / Cantones representados                    23 / 220
+  ---------------------------------------------------------------
+  • Efectividad de georreferenciación (sobre universo): 99.9974%
+  • Precisión topológica inicial (1ra pasada):          98.96%
+  • Tasa de rescate sobre corruptos sin decimal:        0.00%
+  • Retención global (bruto → final):                   80.78%
+  • Integridad contable del ciclo de vida:              [OK] CUADRE EXACTO
+====================================================================
+
+........................................................................ [ 66%]
+....................................                                     [100%]
+108 passed in 11.54s
+Name                       
+----                       
+test_exportacion.py        
+test_filtros.py            
+test_ingesta.py            
+test_normalizar_texto.py   
+test_reparar_coordenadas.py
+__init__.py                
+                           
+                           
+                           
+
+

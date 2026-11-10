@@ -1,0 +1,5 @@
+Command exited with code 0.
+
+Command output:
+Checked all 12 categorical columns for NAs.
+Category with NA in GPKG OK!

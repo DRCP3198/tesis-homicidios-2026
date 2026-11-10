@@ -1,0 +1,218 @@
+Command exited with code 0.
+
+Command output:
+============================================================
+  FASE 1: INGESTA Y RENOMBRADO DE DATOS
+============================================================
+  Leyendo: D:\Tesis\data\raw\base_homi_2010_2025.csv
+  Registros cargados: 47,739
+  Columnas originales (21): ['X2', 'X4', 'X21', 'X22', 'X23', 'X28', 'X33', 'X35', 'X39', 'X40', 'X45', 'X47', 'X53', 'X133', 'X208', 'X209', 'anio', 'mes', 'dia', 'rangoh', 'DPA_DESPRO']
+  Columnas renombradas (21): ['codigo_caso', 'tipo_delito', 'fecha_hecho', 'anio_hecho', 'mes_hecho', 'dia_semana', 'hora_aproximada', 'provincia', 'canton', 'zona_tipo', 'lugar_especifico', 'tipo_arma', 'motivacion_detalle', 'causa_especifica', 'edad_victima', 'sexo_victima', 'nacionalidad_victima', 'latitud', 'longitud', 'AUX_HORA_SISTEMA', 'AUX_MINUTO_SISTEMA']
+  Primeras 3 filas:
+codigo_caso tipo_delito fecha_hecho anio_hecho mes_hecho dia_semana hora_aproximada provincia canton zona_tipo lugar_especifico tipo_arma    motivacion_detalle causa_especifica edad_victima sexo_victima nacionalidad_victima   latitud   longitud AUX_HORA_SISTEMA AUX_MINUTO_SISTEMA
+HM1001 0014   Homicidio  2010-01-01       2010     enero    viernes              20     AZUAY CUENCA    Urbano      Via Pública    Blanca                  Otro             Otro           42       Hombre          Ecuatoriana  -2.88278 -79.025539               20                  0
+HM1001 0113   Homicidio  2010-01-13       2010     enero  miércoles               9     AZUAY CUENCA    Urbano      Via Pública     Otras Violencia Comunitaria            Riñas           51       Hombre          Ecuatoriana -2.901871 -79.032907                9                  0
+HM1001 0212   Homicidio  2010-01-29       2010     enero    viernes              21     AZUAY CUENCA    Urbano             Otro    Blanca                  Otro             Otro           54       Hombre          Ecuatoriana -2.898014 -78.976785               21                  0
+============================================================
+  Guardado intermedio: D:\Tesis\data\interim\homi_renombrado.parquet
+  Tamaño: 1468.2 KB
+============================================================
+  FASE 2: LIMPIEZA Y NORMALIZACIÓN TEXTUAL
+============================================================
+  [OK] codigo_caso               | Antes: ['HM1001 0014', 'HM1001 0113', 'HM1001 0212']
+                                 | Después: ['HM1001 0014', 'HM1001 0113', 'HM1001 0212']
+  [OK] tipo_delito               | Antes: ['Homicidio', 'Asesinato', 'Sicariato']
+                                 | Después: ['HOMICIDIO', 'ASESINATO', 'SICARIATO']
+  [OK] zona_tipo                 | Antes: ['Urbano', 'Rural', 'SD']
+                                 | Después: ['URBANO', 'RURAL', 'SD']
+  [OK] lugar_especifico          | Antes: ['Via Pública', 'Otro', 'Hogar']
+                                 | Después: ['VIA PUBLICA', 'OTRO', 'HOGAR']
+  [OK] tipo_arma                 | Antes: ['Blanca', 'Otras', 'Fuego']
+                                 | Después: ['BLANCA', 'OTRAS', 'FUEGO']
+  [OK] motivacion_detalle        | Antes: ['Otro', 'Violencia Comunitaria', 'Delincuencia común']
+                                 | Después: ['OTRO', 'VIOLENCIA COMUNITARIA', 'DELINCUENCIA COMUN']
+  [OK] causa_especifica          | Antes: ['Otro', 'Riñas', 'Robo a personas']
+                                 | Después: ['OTRO', 'RINAS', 'ROBO A PERSONAS']
+  [OK] sexo_victima              | Antes: ['Hombre', 'Mujer', 'SD']
+                                 | Después: ['HOMBRE', 'MUJER', 'SD']
+  [OK] nacionalidad_victima      | Antes: ['Ecuatoriana', 'Colombiana', 'Peruana']
+                                 | Después: ['ECUATORIANA', 'COLOMBIANA', 'PERUANA']
+  [OK] canton                    | Antes: ['CUENCA', 'CAMILO PONCE ENRIQUEZ', 'GIRON']
+                                 | Después: ['CUENCA', 'CAMILO PONCE ENRIQUEZ', 'GIRON']
+  [OK] mes_hecho                 | Antes: ['enero', 'febrero', 'marzo']
+                                 | Después: ['ENERO', 'FEBRERO', 'MARZO']
+  [OK] dia_semana                | Antes: ['viernes', 'miércoles', 'lunes']
+                                 | Después: ['VIERNES', 'MIERCOLES', 'LUNES']
+  [OK] provincia                 | Antes: ['AZUAY', 'BOLIVAR', 'CAÑAR']
+                                 | Después: ['AZUAY', 'BOLIVAR', 'CANAR']
+------------------------------------------------------------
+  Columnas normalizadas: 13
+  Total registros: 47,739
+============================================================
+============================================================
+  AUDITORÍA DE CARACTERES ESPECIALES (TILDES Y EÑES)
+============================================================
+  Patrón Regex: [áéíóúÁÉÍÓÚñÑüÜ]
+  Columnas a revisar: 13
+------------------------------------------------------------
+  [OK] No se encontraron eñes ni tildes ocultas en las columnas de texto.
+============================================================
+  Guardado intermedio: D:\Tesis\data\interim\homi_normalizado.parquet
+  Tamaño: 1466.3 KB
+============================================================
+  FASE 3: FILTRADO TEMPORAL Y GEOGRÁFICO
+============================================================
+  [3.1] Conversión anio_hecho → Int64
+        Registros antes:  47,739
+        Nulos generados:  0
+        Eliminados (NaN): 0
+        Registros después: 47,739
+  [3.2] Filtro temporal: anio_hecho <= 2024
+        Registros antes:   47,739
+        Excluidos (>2024): 9,171 → 2025: 9171
+        Registros después: 38,568
+  [3.3] Exclusión de Galápagos (cantones insulares)
+        Cantones excluidos: ['GALAPAGOS', 'ISABELA', 'SANTA CRUZ', 'SAN CRISTOBAL']
+        Registros antes:       38,568
+        Registros insulares:   2 → SANTA CRUZ: 2
+        Registros continental: 38,566
+  [3.4] Guardado insular (trazabilidad): D:\Tesis\data\interim\homi_insular_excluido.parquet
+        Registros insulares guardados: 2
+        Tamaño: 12.3 KB
+============================================================
+  REPORTE DE CONTROL — FASE 3: FILTRADO
+============================================================
+  Métrica                                      Conteo
+  ---------------------------------------- ----------
+  Registros originales (entrada Fase 3)        47,739
+  (-) Eliminados por conversión NaN                 0
+  (=) Post-conversión anio_hecho               47,739
+  (-) Excluidos por año > 2024                  9,171
+  (=) Post-filtro temporal                     38,568
+  (-) Registros insulares (Galápagos)               2
+  (=) REGISTROS CONTINENTAL FINAL              38,566
+  ---------------------------------------- ----------
+
+  Detalle de años excluidos:
+    Año 2025: 9,171 registros
+
+  Detalle de cantones insulares excluidos:
+    SANTA CRUZ: 2 registros
+
+  ──────────────────────────────────────────────────
+  [OK] Verificación de integridad: PASÓ
+       0 + 9171 + 2 + 38566 = 47739 (== 47739 original)
+
+  Tasa de retención: 80.79% (38,566 de 47,739)
+============================================================
+  [3.6] Guardado intermedio: D:\Tesis\data\interim\homi_filtrado_2024.parquet
+        Tamaño: 1216.6 KB
+============================================================
+  FASE 4: VALIDACIÓN GEOESPACIAL COMPLETA
+============================================================
+============================================================
+  FASE 4.1–4.2: CARGA Y HOMOLOGACIÓN CARTOGRÁFICA
+============================================================
+  Leyendo shapefile: D:\Tesis\data\raw\cartografia\nxcantones.shp
+  Polígonos cargados: 224
+  CRS original: EPSG:32717
+  Columnas: ['DPA_VALOR', 'DPA_ANIO', 'DPA_CANTON', 'DPA_DESCAN', 'DPA_PROVIN', 'DPA_DESPRO', 'geometry']
+  CRS reproyectado: EPSG:4326
+  Geometrías reparadas: 1 (antes) → 0 (despues)
+  Cantones en mapa (total): 222
+  Excluidos (Galápagos + Zona No Delim.): 6
+  Cantones continental final: 216
+============================================================
+  [4.3] Creación de puntos geoespaciales
+        Registros entrada: 38,566
+        NaN en latitud:  0
+        NaN en longitud: 0
+        Registros con coordenadas válidas: 38,566
+        GeoDataFrame creado: 38,566 puntos en EPSG:4326
+  [4.4] Auditoría topológica: punto-en-polígono (sjoin vectorizado)
+        Total puntos evaluados: 38,566
+        Correctos (dentro de su cantón): 38,166 (98.96%)
+        A corregir (fuera de su cantón): 400 (1.04%)
+  [4.5] Separación por formato de coordenadas
+        Con punto decimal (limbo): 399
+        Sin punto decimal (reparar): 1
+  [4.6] Algoritmo reparador de coordenadas decimales
+        Escenario 1: X.XXXXXX  (positivo Norte): 0 rescatados (1 pendientes)
+        Escenario 2: 0.XXXXXX  (positivo Ecuador): 0 rescatados (1 pendientes)
+        Escenario 3: -X.XXXXXX (negativo Sur) ← CRÍTICO: 0 rescatados (1 pendientes)
+        Escenario 4: -0.XXXXXX (negativo Ecuador): 0 rescatados (1 pendientes)
+        ─────────────────────────────────────────────
+        Total rescatados: 0 de 1
+        No reparados: 1
+  [4.7] Ensamblaje y limpieza final
+        geo_correctos                 :  38,166
+        reparados_esc1                :       0
+        reparados_esc2                :       0
+        reparados_esc3                :       0
+        reparados_esc4                :       0
+        limbo_formato_correcto        :     399
+        no_reparados (excluidos)      :       1
+        ─────────────────────────────────────────────
+        Total ensamblado (antes de limpieza): 38,565
+        REGISTROS GEORREFERENCIADOS FINALES: 38,565
+  [4.8] Exportación de artefactos geoespaciales
+        Guardado: D:\Tesis\data\interim\geo_correctos.parquet
+        Tamaño: 2699.2 KB | Registros: 38,166
+        Guardado: D:\Tesis\data\processed\homi_georreferenciado.parquet
+        Tamaño: 2108.1 KB | Registros: 38,565
+============================================================
+  REPORTE DE VERIFICACIÓN — FASE 4: VALIDACIÓN GEOESPACIAL
+============================================================
+  Homicidios procesados (entrada):            38,566
+  Rescatados perfectos (1ra auditoría):       38,166
+  Rescatados por algoritmo (4 escenarios):         0
+  Limbo con coordenadas retenidos:               399
+  No reparados (excluidos):                        1
+  ────────────────────────────────────────────────────
+  TOTAL GEORREFERENCIADOS:                    38,565
+  Efectividad total del pipeline: 100.00%
+============================================================
+============================================================
+  FASE 5: ETIQUETADO FINAL, EXPORTACIÓN Y VISUALIZACIÓN
+============================================================
+  [5.1] Selección, homologación y tipado estricto de las 21 columnas finales
+        Esquema consolidado: 38,565 filas × 21 columnas limpias
+  [5.2] Exportación a formato CSV (UTF-8)
+        Guardado: D:\Tesis\data\processed\homi_Final_Continental_Etiquetado.csv (6.46 MB)
+  [5.3] Exportación a formato Parquet (pyarrow + snappy)
+        Guardado: D:\Tesis\data\processed\homi_final.parquet (1.26 MB)
+  [5.4] Exportación geoespacial a OGC GeoPackage (.gpkg, EPSG:4326)
+        Guardado: D:\Tesis\data\processed\homi_final.gpkg (10.11 MB | capa='homicidios_continental_2010_2024' | CRS=EPSG:4326)
+  [5.5] Generando reporte estadístico de control y efectividad del pipeline
+        Reporte JSON guardado: D:\Tesis\reports\auditoria_fase5.json
+        Reporte Markdown guardado: D:\Tesis\reports\auditoria_fase5.md
+====================================================================
+  AUDITORÍA ESTADÍSTICA INTEGRAL DEL PIPELINE (FASES 1 A 5)
+====================================================================
+  1. CICLO DE VIDA DE REGISTROS                            Conteo
+  ------------------------------------------------ --------------
+  Registros brutos iniciales (Fase 1)                      47,739
+  (-) Excluidos filtro temporal (> 2024)                    9,171
+  (-) Excluidos filtro insular (Galápagos)                      2
+  (=) Universo continental 2010-2024 (Fase 3)              38,566
+  ------------------------------------------------ --------------
+  2. AUDITORÍA Y RESCATE GEOESPACIAL (Fase 4)     
+  (+) Correctos en 1ra auditoría topológica                38,166
+  (+) Rescatados por algoritmo decimal (4 esc.)                 0
+  (+) Limbo con formato decimal retenidos                     399
+  (-) Coordenadas descartadas irreversibles                     1
+  ------------------------------------------------ --------------
+  (=) REGISTROS FINALES ETIQUETADOS (Fase 5)               38,565
+  Columnas limpias seleccionadas                               21
+  Provincias / Cantones representados                    23 / 220
+  ---------------------------------------------------------------
+  • Efectividad de georreferenciación (sobre universo): 99.9974%
+  • Precisión topológica inicial (1ra pasada):          98.96%
+  • Tasa de rescate sobre corruptos sin decimal:        0.00%
+  • Retención global (bruto → final):                   80.78%
+  • Integridad contable del ciclo de vida:              [OK] CUADRE EXACTO
+====================================================================
+  [5.6] Generando mapa diagnóstico continental (300 DPI)
+        Mapa guardado: D:\Tesis\reports\figuras\mapa_diagnostico_continental.png (1165.9 KB | 300 DPI)
+
+[OK] Pipeline completo (Fases 1 a 5) ejecutado exitosamente.

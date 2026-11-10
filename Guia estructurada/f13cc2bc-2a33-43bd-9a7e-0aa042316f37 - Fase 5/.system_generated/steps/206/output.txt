@@ -1,0 +1,60 @@
+Command exited with code 0.
+
+Command output:
+matplotlib: 3.11.2
+geopandas: 1.2.0
+Shape: (38565, 24)
+Columns: ['codigo_caso', 'tipo_delito', 'fecha_hecho', 'anio_hecho', 'mes_hecho', 'dia_semana', 'hora_aproximada', 'provincia', 'canton', 'zona_tipo', 'lugar_especifico', 'tipo_arma', 'motivacion_detalle', 'causa_especifica', 'edad_victima', 'sexo_victima', 'nacionalidad_victima', 'latitud', 'longitud', 'AUX_HORA_SISTEMA', 'AUX_MINUTO_SISTEMA', 'lat_num', 'lon_num', 'ID_temp']
+Dtypes:
+ codigo_caso              object
+tipo_delito              object
+fecha_hecho              object
+anio_hecho                Int64
+mes_hecho                object
+dia_semana               object
+hora_aproximada          object
+provincia                object
+canton                   object
+zona_tipo                object
+lugar_especifico         object
+tipo_arma                object
+motivacion_detalle       object
+causa_especifica         object
+edad_victima             object
+sexo_victima             object
+nacionalidad_victima     object
+latitud                  object
+longitud                 object
+AUX_HORA_SISTEMA         object
+AUX_MINUTO_SISTEMA       object
+lat_num                 float64
+lon_num                 float64
+ID_temp                   int64
+dtype: object
+
+Head(2):
+                                 0                      1
+codigo_caso           HM1001 0014            HM1001 0113
+tipo_delito             HOMICIDIO              HOMICIDIO
+fecha_hecho            2010-01-01             2010-01-13
+anio_hecho                   2010                   2010
+mes_hecho                   ENERO                  ENERO
+dia_semana                VIERNES              MIERCOLES
+hora_aproximada                20                      9
+provincia                   AZUAY                  AZUAY
+canton                     CUENCA                 CUENCA
+zona_tipo                  URBANO                 URBANO
+lugar_especifico      VIA PUBLICA            VIA PUBLICA
+tipo_arma                  BLANCA                  OTRAS
+motivacion_detalle           OTRO  VIOLENCIA COMUNITARIA
+causa_especifica             OTRO                  RINAS
+edad_victima                   42                     51
+sexo_victima               HOMBRE                 HOMBRE
+nacionalidad_victima  ECUATORIANA            ECUATORIANA
+latitud                  -2.88278              -2.901871
+longitud               -79.025539             -79.032907
+AUX_HORA_SISTEMA               20                      9
+AUX_MINUTO_SISTEMA              0                      0
+lat_num                  -2.88278              -2.901871
+lon_num                -79.025539             -79.032907
+ID_temp                         1                      2

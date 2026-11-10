@@ -1,0 +1,9 @@
+Command exited with code 0.
+
+Command output:
+
+src\ingesta\config.py:182:SALIDA_CSV_FINAL = PROCESSED_DIR / "homi_Final_Continental_Etiquetado.csv"
+src\ingesta\config.py:183:SALIDA_PARQUET_FINAL = PROCESSED_DIR / "homi_Final_Continental_Etiquetado.parquet"
+src\ingesta\config.py:185:SALIDA_GPKG_FINAL = PROCESSED_DIR / "homi_final.gpkg"
+
+

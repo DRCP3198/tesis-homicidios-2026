@@ -67,8 +67,10 @@ D:\Tesis\
 │   ├── limpieza/             # Normalización textual y filtros
 │   ├── validacion_geo/       # Pipeline geoespacial completo
 │   ├── exportacion/          # Salida CSV, Parquet, GeoPackage
-│   ├── reportes/             # Auditorías y visualización
+│   ├── reportes/             # Auditorías y métricas del ciclo de vida
+│   ├── visualizacion/        # Mapas diagnósticos (300 DPI)
 │   └── utils/                # Funciones reutilizables
+├── reports/                  # Auditoría JSON/MD y figuras PNG
 ├── notebooks/                # Jupyter para exploración
 ├── tests/                    # Pruebas automatizadas
 ├── R_legacy/                 # Código R original (referencia)
@@ -83,9 +85,9 @@ D:\Tesis\
 |------|-------------|--------|
 | 1. Revicion de datos y Renombrado | Lectura CSV + renombrado 21 columnas | ✅ |
 | 2. Limpieza Textual | Mayúsculas, tildes, espacios | ✅ |
-| 3. Filtrado | Año ≤2024, sin Galápagos | ⬜ |
-| 4. Validación Geoespacial | Point-in-polygon + reparación coords | ⬜ |
-| 5. Exportación Final | CSV, Parquet, GeoPackage | ⬜ |
+| 3. Filtrado | Año ≤2024, sin Galápagos | ✅ |
+| 4. Validación Geoespacial | Point-in-polygon + reparación coords | ✅ |
+| 5. Exportación Final | CSV, Parquet, GeoPackage + Auditoría + Mapa | ✅ |
 | 6. Series Temporales | Agregación, modelado (futuro) | ⬜ |
 
 ## Origen de Datos

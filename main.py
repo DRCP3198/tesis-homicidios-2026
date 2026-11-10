@@ -64,8 +64,84 @@ from src.validacion_geo.geometrias import (
 )
 from src.validacion_geo.reparacion import reparar_coordenadas_corruptas
 
+# ── Imports Fase 5: Etiquetado Final, Exportación y Visualización ──
+# Importa los tres submódulos finales (Pasos 5.1 a 5.6):
+#   1. exportador.py        → selección de 21 columnas, tipado y escritura CSV/Parquet/GeoPackage.
+#   2. metricas_pipeline.py → auditoría estadística del ciclo de vida completo (JSON + Markdown).
+#   3. mapa_diagnostico.py  → figura cartográfica de alta resolución (300 DPI) para tesis.
+import geopandas as gpd
+import pandas as pd
+
+from src.exportacion.exportador import (
+    exportar_todos_formatos,
+    seleccionar_y_estandarizar_columnas,
+)
+from src.ingesta.config import PROCESSED_GEORREFERENCIADO
+from src.reportes.metricas_pipeline import (
+    ResumenAuditoriaPipeline,
+    generar_auditoria_pipeline,
+)
+from src.visualizacion.mapa_diagnostico import generar_mapa_diagnostico
+
 #pipeline = proceso general que coordina las etapas de preprocesamiento.
 #ingesta = módulo encargado de cargar los datos originales.
+
+
+def ejecutar_exportacion_final(
+    df_georreferenciado: pd.DataFrame | None = None,
+    mapa_cantones: gpd.GeoDataFrame | None = None,
+    n_brutos_iniciales: int | None = None,
+    n_excluidos_temporal: int | None = None,
+    n_excluidos_insular: int | None = None,
+    n_universo_filtrado: int | None = None,
+    n_geo_correctos: int | None = None,
+    n_rescatados_algoritmo: int | None = None,
+    n_limbo_retenidos: int | None = None,
+    n_descartados_irreversibles: int | None = None,
+    detalle_escenarios: dict[str, int] | None = None,
+) -> tuple[pd.DataFrame, ResumenAuditoriaPipeline]:
+    """
+    Orquesta los Pasos 5.1 a 5.6 (Etiquetado Final, Exportación, Auditoría y Mapa).
+
+    Puede invocarse al final de `main()` pasando los objetos en memoria, o bien de
+    manera independiente (`ejecutar_exportacion_final()`) leyendo `data/processed/homi_georreferenciado.parquet`.
+    """
+    print("=" * 60)
+    print("  FASE 5: ETIQUETADO FINAL, EXPORTACIÓN Y VISUALIZACIÓN")
+    print("=" * 60)
+
+    # Si no se pasó `df_georreferenciado` en memoria, lo cargamos del artefacto de Fase 4.
+    if df_georreferenciado is None:
+        df_georreferenciado = pd.read_parquet(PROCESSED_GEORREFERENCIADO)
+
+    # Si no se pasó el mapa cantonal en memoria, lo cargamos y homologamos.
+    if mapa_cantones is None:
+        mapa_cantones = cargar_mapa_cantonal()
+
+    # Paso 5.1: Selección de las 21 columnas limpias, renombrado de coords y tipado estricto.
+    df_etiquetado = seleccionar_y_estandarizar_columnas(df_georreferenciado)
+
+    # Pasos 5.2, 5.3 y 5.4: Escritura de CSV (UTF-8), Parquet (Snappy) y GeoPackage (EPSG:4326).
+    exportar_todos_formatos(df_etiquetado)
+
+    # Paso 5.5: Auditoría estadística del ciclo de vida completo (consola + JSON + Markdown).
+    resumen_auditoria = generar_auditoria_pipeline(
+        df_final=df_etiquetado,
+        n_brutos_iniciales=n_brutos_iniciales,
+        n_excluidos_temporal=n_excluidos_temporal,
+        n_excluidos_insular=n_excluidos_insular,
+        n_universo_filtrado=n_universo_filtrado,
+        n_geo_correctos=n_geo_correctos,
+        n_rescatados_algoritmo=n_rescatados_algoritmo,
+        n_limbo_retenidos=n_limbo_retenidos,
+        n_descartados_irreversibles=n_descartados_irreversibles,
+        detalle_escenarios=detalle_escenarios,
+    )
+
+    # Paso 5.6: Mapa diagnóstico de validación continental en alta resolución (300 DPI).
+    generar_mapa_diagnostico(df_etiquetado, mapa_cantones)
+
+    return df_etiquetado, resumen_auditoria
 
 
 def main():
@@ -180,10 +256,29 @@ def main():
         n_final=len(df_georreferenciado),
     )
 
-    # ── FASE 5: Etiquetado y exportación final ──
-    # TODO: Sesión 7
+    # ── FASE 5: Etiquetado final, exportación multiformato, auditoría y mapa ──
+    # Corresponde a las Fases R 10-13 (líneas 486-627): concluye la migración completa.
+    detalle_escenarios = {
+        "escenario_1_positivo_entero": len(esc1),
+        "escenario_2_positivo_cero": len(esc2),
+        "escenario_3_negativo_entero": len(esc3),
+        "escenario_4_negativo_cero": len(esc4),
+    }
+    ejecutar_exportacion_final(
+        df_georreferenciado=df_georreferenciado,
+        mapa_cantones=mapa,
+        n_brutos_iniciales=len(df_entrada_fase3),
+        n_excluidos_temporal=len(df_entrada_fase3) - len(df_post_filtro_anio),
+        n_excluidos_insular=len(df_insular),
+        n_universo_filtrado=len(df_continental),
+        n_geo_correctos=len(geo_correctos),
+        n_rescatados_algoritmo=n_reparados_total,
+        n_limbo_retenidos=len(limbo_formato_correcto),
+        n_descartados_irreversibles=len(df_continental) - len(df_georreferenciado),
+        detalle_escenarios=detalle_escenarios,
+    )
 
-    print("\n[OK] Pipeline Fases 1-4 completado exitosamente.")
+    print("\n[OK] Pipeline completo (Fases 1 a 5) ejecutado exitosamente.")
 
 
 # Punto de entrada del programa:

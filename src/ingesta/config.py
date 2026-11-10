@@ -69,6 +69,12 @@ PROCESSED_DIR = DATA_DIR / "processed"
 # (Los shapefiles del mapa de cantones del Ecuador).
 CARTOGRAFIA_DIR = RAW_DIR / "cartografia"
 
+# Directorios para reportes de auditoría y figuras cartográficas (Fase 5).
+# Aquí se guardan los resúmenes estadísticos (.json / .md) y los mapas (.png)
+# listos para incluir en el documento de tesis.
+REPORTS_DIR = PROJECT_ROOT / "reports"
+FIGURAS_DIR = REPORTS_DIR / "figuras"
+
 # =========================================================================
 # ARCHIVOS FUENTE
 # =========================================================================
@@ -165,21 +171,81 @@ COLUMNAS_TEXTO_NORMALIZAR = [
 
 
 # =========================================================================
+# ESQUEMA CONSOLIDADO DE 21 COLUMNAS FINALES (Fase 5)
+# =========================================================================
+# Orden oficial de las 21 columnas limpias según docs/diccionario_datos.md
+# y la arquitectura del proyecto (equivale al dplyr::select() de R Fase 13).
+COLUMNAS_FINALES_21 = [
+    "codigo_caso",           # 1.  str/string — Identificador policial codificado
+    "tipo_delito",           # 2.  category   — Tipificación legal
+    "fecha_hecho",           # 3.  datetime64 — Fecha exacta (YYYY-MM-DD)
+    "anio_hecho",            # 4.  Int64      — Año de ocurrencia (2010-2024)
+    "mes_hecho",             # 5.  category   — Mes del suceso
+    "dia_semana",            # 6.  category   — Día de la semana
+    "hora_aproximada",       # 7.  float64    — Hora decimal aproximada del evento
+    "provincia",             # 8.  category   — Nombre oficial de la provincia
+    "canton",                # 9.  category   — Nombre oficial del cantón
+    "zona_tipo",             # 10. category   — Urbano / Rural / SD
+    "lugar_especifico",      # 11. category   — Espacio de la agresión
+    "tipo_arma",             # 12. category   — Instrumento del deceso
+    "motivacion_detalle",    # 13. category   — Causa hipotética
+    "causa_especifica",      # 14. category   — Detalle fáctico del móvil
+    "edad_victima",          # 15. float64    — Edad en años (admite decimales en lactantes)
+    "sexo_victima",          # 16. category   — Género biológico
+    "nacionalidad_victima",  # 17. category   — País de origen
+    "latitud",               # 18. float64    — Coordenada Y validada/reparada (desde lat_num)
+    "longitud",              # 19. float64    — Coordenada X validada/reparada (desde lon_num)
+    "AUX_HORA_SISTEMA",      # 20. Int64      — Auditoría horaria interna (0-23)
+    "AUX_MINUTO_SISTEMA",    # 21. Int64      — Auditoría de minutos interna (0-59)
+]
+
+# Las 12 columnas de texto de baja cardinalidad que se convierten a tipo
+# `category` en la Fase 5 (ahorra memoria RAM y acelera agrupaciones).
+COLUMNAS_CATEGORICAS_FINALES = [
+    "tipo_delito",
+    "mes_hecho",
+    "dia_semana",
+    "provincia",
+    "canton",
+    "zona_tipo",
+    "lugar_especifico",
+    "tipo_arma",
+    "motivacion_detalle",
+    "causa_especifica",
+    "sexo_victima",
+    "nacionalidad_victima",
+]
+
+# Mapeo que homologa las coordenadas numéricas validadas en la Fase 4
+# (lat_num / lon_num) hacia los nombres definitivos del diccionario de datos.
+MAPEO_COORDENADAS_FINALES = {
+    "lat_num": "latitud",
+    "lon_num": "longitud",
+}
+
+# =========================================================================
 # ARCHIVOS DE SALIDA INTERMEDIA
 # =========================================================================
 # Cada fase guarda su resultado en un archivo .parquet dentro de data/interim/.
 # Parquet es un formato binario, comprimido y que respeta los tipos de datos
 # (reemplaza al .rds de R). Es mucho más rápido de leer que un CSV.
-INTERIM_RENOMBRADO = INTERIM_DIR / "homi_renombrado.parquet"        # Salida Fase 1
-INTERIM_NORMALIZADO = INTERIM_DIR / "homi_normalizado.parquet"      # Salida Fase 2
-INTERIM_FILTRADO = INTERIM_DIR / "homi_filtrado_2024.parquet"       # Salida Fase 3
-INTERIM_GEO_CORRECTOS = INTERIM_DIR / "geo_correctos.parquet"       # Salida Fase 4
+INTERIM_RENOMBRADO = INTERIM_DIR / "homi_renombrado.parquet"                # Salida Fase 1
+INTERIM_NORMALIZADO = INTERIM_DIR / "homi_normalizado.parquet"              # Salida Fase 2
+INTERIM_FILTRADO = INTERIM_DIR / "homi_filtrado_2024.parquet"               # Salida Fase 3
+INTERIM_INSULAR_EXCLUIDO = INTERIM_DIR / "homi_insular_excluido.parquet"    # Trazabilidad Fase 3
+INTERIM_GEO_CORRECTOS = INTERIM_DIR / "geo_correctos.parquet"               # Salida Fase 4 (1ra aud.)
+PROCESSED_GEORREFERENCIADO = PROCESSED_DIR / "homi_georreferenciado.parquet"  # Salida Fase 4 (ensamble)
 
 # =========================================================================
-# ARCHIVOS DE SALIDA FINAL
+# ARCHIVOS DE SALIDA FINAL (Fase 5)
 # =========================================================================
 # Archivos definitivos que se generarán en la Fase 5 (exportación final).
 SALIDA_CSV_FINAL = PROCESSED_DIR / "homi_Final_Continental_Etiquetado.csv"
-SALIDA_PARQUET_FINAL = PROCESSED_DIR / "homi_Final_Continental_Etiquetado.parquet"
+SALIDA_PARQUET_FINAL = PROCESSED_DIR / "homi_final.parquet"
 # .gpkg = GeoPackage: formato moderno de mapas en un solo archivo (reemplaza al .shp).
 SALIDA_GPKG_FINAL = PROCESSED_DIR / "homi_final.gpkg"
+
+# Reportes y visualizaciones diagnósticas (Fase 5.5 y 5.6)
+SALIDA_AUDITORIA_JSON = REPORTS_DIR / "auditoria_pipeline.json"
+SALIDA_AUDITORIA_MD = REPORTS_DIR / "auditoria_pipeline.md"
+SALIDA_MAPA_DIAGNOSTICO = FIGURAS_DIR / "mapa_diagnostico_continental.png"
