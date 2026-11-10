@@ -48,7 +48,7 @@ from src.ingesta.config import CRS_OBJETIVO  # 4326 (WGS84)
 # El guión bajo "_" al inicio del nombre (_limpiar_cadena_lat) es una
 # convención de Python: indica que es una función INTERNA ("privada") de este
 # archivo; los demás módulos no deberían necesitar llamarla directamente.
-def _limpiar_cadena_lat(serie_lat: pd.Series) -> pd.Series:
+def _limpiar_cadena_lat(serie_lat: pd.Series) -> pd.Series: #elimina puntos y signos negativos
     r"""
     Limpia la cadena de latitud eliminando puntos y signos negativos.
 
@@ -90,7 +90,7 @@ def _limpiar_cadena_lat(serie_lat: pd.Series) -> pd.Series:
 # Nota de diseño: las 4 funciones de reconstrucción son "FUNCIONES PURAS":
 # reciben una columna de texto y devuelven otra columna nueva sin modificar
 # nada externo. Eso permite probarlas de forma aislada y muy rápida.
-def reconstruir_escenario_1(limpia_lat: pd.Series) -> pd.Series:
+def reconstruir_escenario_1(limpia_lat: pd.Series) -> pd.Series: #toma el numero y le pone el punto decimal
     """
     Reconstruye latitud con formato X.XXXXXX (positivo).
 
@@ -295,11 +295,11 @@ def validar_reconstruccion_sjoin(
     # Filtrar registros con latitud válida
     # .notna() → True donde NO es nulo. "&" = "Y" lógico fila por fila
     # (en pandas se usa "&" entre columnas booleanas, NO la palabra `and`).
-    validos = lat_num.notna() & df["lon_num"].notna()
+    validos = lat_num.notna() & df["lon_num"].notna() #***en las latitudes recosntruidas no deve estar null ni la longitud de data frame A REPARAR
     if validos.sum() == 0:  # Ninguna fila tuvo ambas coordenadas válidas.
         return set()
 
-    df_validos = df[validos].copy()
+    df_validos = df[validos].copy() #***a partir de la "Serie booleana de pandas" hago una copia para hacer los procesos.
     lat_valida = lat_num[validos]
 
     # Crear GeoDataFrame de puntos con la latitud reconstruida
@@ -309,10 +309,10 @@ def validar_reconstruccion_sjoin(
         df_validos,
         geometry=gpd.points_from_xy(df_validos["lon_num"], lat_valida),
         crs=f"EPSG:{CRS_OBJETIVO}",
-    )
+    )#*** creo un geo data frame con todo lo valido
 
     # sjoin vectorizado (reemplaza el bucle R completo)
-    # how="inner" → aquí solo nos interesan los puntos que SÍ cayeron dentro
+    # ***how="inner" → aquí solo nos interesan los puntos que SÍ cayeron dentro
     #               de algún polígono del mapa; los que caen en el mar o en
     #               otro país se descartan directo (más rápido que "left").
     resultado = gpd.sjoin(
@@ -320,7 +320,9 @@ def validar_reconstruccion_sjoin(
         mapa[["CANTON_MAPA", "geometry"]],
         how="inner",
         predicate="intersects",
-    )
+    )#*** hago el inter (intercepcion), 
+    #Evalúa fila por fila si el cantón que el usuario escribió originalmente coincide con el polígono 
+    # #donde el punto cayó físicamente tras la reparación. 
 
     # Filtrar donde cantón reportado == cantón geográfico
     # ¡Esta es la prueba de fuego! No basta con que el punto caiga en Ecuador:
@@ -331,8 +333,15 @@ def validar_reconstruccion_sjoin(
             resultado["canton"] == resultado["CANTON_MAPA"], "ID_temp"
         ].unique()
     )
+    # ***ID_temp corresponde a registros exitosamente reparados. SE ENTIENDE QUE VIENE YA COMO COLUMNA
+    # Y devuelve uncamente el  "ID_temp" ****
+    #Si por alguna razón un punto cayó justo en el borde de dos mapas 
+    # y la fila se duplicó, .unique() elimina duplicados y devuelve un arreglo limpio de números
+    # set(...):
+    #Convierte ese arreglo en un conjunto de Python: {101, 103}.
 
-    return ids_rescatados
+    return ids_rescatados #devuelve una lista de identificadores (set[int]) 
+    #de los registros que superaron la prueba con éxito.
 
 
 # =========================================================================

@@ -104,7 +104,7 @@ def crear_geodataframe_puntos(df: pd.DataFrame) -> gpd.GeoDataFrame:
     # filter(!is.na(lat.new) & !is.na(lon.new)) → dropna
     # Elimina cualquier fila a la que le falte la latitud O la longitud
     # (sin ambas coordenadas es imposible ubicar el punto en el mapa).
-    df = df.dropna(subset=["lat_num", "lon_num"])
+    df = df.dropna(subset=["lat_num", "lon_num"]) #de estas columnas elimina los na
     n_despues = len(df)
 
     print(f"        Registros entrada: {n_antes:,}")
@@ -140,6 +140,7 @@ def crear_geodataframe_puntos(df: pd.DataFrame) -> gpd.GeoDataFrame:
         geometry=gpd.points_from_xy(df["lon_num"], df["lat_num"]),
         crs=f"EPSG:{CRS_OBJETIVO}",
     )
+    #En pocas palabrabras cojo la longitud y latitud y creo la nuve de puntos en formato EPSG:4326 que es un estandar creado por una petrolera
 
     print(f"        GeoDataFrame creado: {len(gdf):,} puntos en EPSG:{CRS_OBJETIVO}")
 
@@ -223,6 +224,10 @@ def auditar_punto_en_poligono(
         predicate="intersects",
     )
 
+    #esta operación hace un cruce espacial donde la capa base son tus puntos y el mapa
+    # con poligonos, "intersects" evalúa si el punto comparte al menos un vértice o área con el polígono.
+
+
     # ── Comparar cantón reportado vs. cantón geográfico ──
     # Un punto es "correcto" si el cantón que reporta la base de datos
     # coincide con el cantón del polígono donde cae geométricamente.
@@ -230,6 +235,7 @@ def auditar_punto_en_poligono(
     resultado_sjoin["_coincide"] = (
         resultado_sjoin["canton"] == resultado_sjoin["CANTON_MAPA"]
     )
+    #Si coincide TRUE, el canton por registro como canton geografico por latitud y longitud
 
     # Obtener IDs de los registros correctos (coincidencia cantón-polígono)
     #   .loc[condicion, "ID_temp"] → toma el ID_temp solo de las filas con _coincide == True.
@@ -256,7 +262,7 @@ def auditar_punto_en_poligono(
     # .drop(columns="geometry") → quita la columna de puntos espaciales.
     # pd.DataFrame(...) → asegura que el tipo sea un DataFrame normal de pandas
     #                     (necesario para guardarlo después en Parquet estándar).
-    geo_correctos_df = pd.DataFrame(geo_correctos.drop(columns="geometry"))
+    geo_correctos_df = pd.DataFrame(geo_correctos.drop(columns="geometry")) #elimino la columna geometry
     geo_corregir_df = pd.DataFrame(geo_corregir.drop(columns="geometry"))
 
     n_correctos = len(geo_correctos_df)
@@ -328,7 +334,7 @@ def separar_por_formato(
     #   na=False           → si alguna celda fuera nula, la trata como False (sin punto).
     tiene_punto = geo_corregir["latitud_original"].str.contains(
         r"\.", regex=True, na=False
-    )
+    ) # busco si contiene el .
 
     # Con punto decimal → "limbo": la coordenada está bien escrita (ej. -2.1894),
     # así que NO debemos tocarle los dígitos; se conserva tal cual.
@@ -339,4 +345,4 @@ def separar_por_formato(
     print(f"        Con punto decimal (limbo): {len(limbo_formato_correcto):,}")
     print(f"        Sin punto decimal (reparar): {len(geo_corregir_decimales):,}")
 
-    return limbo_formato_correcto, geo_corregir_decimales
+    return limbo_formato_correcto, geo_corregir_decimales #entonces detecto em pocas palabras si contiene . o ,.

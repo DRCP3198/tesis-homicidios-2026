@@ -44,7 +44,10 @@ def cargar_mapa_cantonal(
     """
     Carga, reproyecta y homologa el mapa cantonal de Ecuador.
 
-    Paso 4.1: Lee el shapefile, reproyecta a WGS84 (EPSG:4326) y
+    Paso 4.1: Lee el shapefile, reproyecta a WGS84 (World Geodetic System 1984)
+    Es el modelo matemático estándar que describe la forma de la Tierra como un elipsoide tridimensional 
+    (EPSG:4326, (European Petroleum Survey Group): Fue una organización técnica petrolera europea
+    creó un registro numérico universal donde cada sistema de coordenadas, elipsoide y proyección del mundo tiene un código único.) y
     repara geometrías inválidas.
     Paso 4.2: Crea CANTON_MAPA normalizado y excluye Galápagos +
     Zona No Delimitada.
@@ -101,6 +104,8 @@ def cargar_mapa_cantonal(
     mapa = gpd.read_file(ruta)
     print(f"  Polígonos cargados: {len(mapa)}")    # Cuántos cantones (filas) hay.
     print(f"  CRS original: {mapa.crs}")           # .crs → sistema de coordenadas del mapa.
+    # IMPRIME CRS original: EPSG:32717
+    # no utiliza grados angulares de una esfera, sino una cuadrícula plana donde la unidad de medida oficial es el metro.
     print(f"  Columnas: {list(mapa.columns)}")
 
     # ── Paso 4.1b: Reproyección a WGS84 ──
@@ -125,9 +130,9 @@ def cargar_mapa_cantonal(
     n_invalidas_antes = (~mapa.is_valid).sum()
     # mapa.make_valid() → devuelve las geometrías corregidas.
     # Las asignamos de vuelta a la columna de geometría del mapa.
-    mapa.geometry = mapa.make_valid()
+    mapa.geometry = mapa.make_valid() #agara los poligonos y corrige si hay inconsistencias
     n_invalidas_despues = (~mapa.is_valid).sum()  # Debería ser 0 tras la reparación.
-    print(f"  Geometrías reparadas: {n_invalidas_antes} → {n_invalidas_despues}")
+    print(f"  Geometrías reparadas: {n_invalidas_antes} (antes) → {n_invalidas_despues} (despues)")
 
     # ── Paso 4.2a: Crear columna CANTON_MAPA normalizada ──
     # Equivale a: mutate(CANTON_MAPA = iconv(str_to_upper(str_trim(DPA_DESCAN)),
