@@ -19,48 +19,58 @@ Objetivo en Python (Pasos 5.1 a 5.4):
       3. OGC GeoPackage (`homi_final.gpkg`) — cartografía vectorial moderna en un solo archivo.
 
 En palabras simples:
-    Este módulo es la "línea de empaque final" de nuestra fábrica de datos. Recibe la
-    base reparada de la Fase 4 (que todavía conserva columnas internas de trabajo como
-    `ID_temp` y las coordenadas viejas en texto), deja solo las 21 columnas oficiales
-    con el tipo de dato exacto que corresponde a cada una y la guarda en tres formatos
-    listos para tesis, Excel, Python y software SIG (QGIS / ArcGIS).
+    Este módulo es la etapa final de empaquetado de datos. Recibe la base reparada
+    de la Fase 4 (que todavía conserva columnas auxiliares de trabajo como `ID_temp`
+    y las coordenadas originales sin reparar en formato texto), selecciona únicamente
+    las 21 columnas oficiales con el tipo de dato técnico que le corresponde a cada
+    variable y persiste la tabla en disco en tres formatos complementarios: texto
+    tabular (CSV), binario columnar (Parquet) y vectorial geoespacial (GeoPackage).
 """
-# `from pathlib import Path` importa la clase Path para manejar rutas de carpetas y
-# archivos como objetos inteligentes compatibles con Windows, Linux y macOS.
+# Nota sobre `r"""` al inicio de los docstrings:
+#   El prefijo `r` significa "raw string" (cadena cruda). Le indica a Python que trate las
+#   barras invertidas `\` literalmente como texto y NO como secuencias de escape (`\n`, `\t`),
+#   evitando advertencias `SyntaxWarning` cuando documentamos rutas de Windows o expresiones regex.
+
+# `from pathlib import Path` importa la clase `Path` de la librería estándar `pathlib`
+# para representar rutas de carpetas y archivos como objetos multiplataforma.
 from pathlib import Path
 
-# `geopandas` (alias `gpd`) es el equivalente en Python al paquete `sf` de R:
-# permite convertir una tabla común en una capa geográfica con puntos/polígonos y CRS.
+# `geopandas` (alias `gpd`) extiende a Pandas para trabajar con geometrías espaciales
+# (puntos, líneas, polígonos) y sistemas de coordenadas CRS; equivale al paquete `sf` de R.
 import geopandas as gpd
 
-# `pandas` (alias `pd`) es la librería central de manipulación tabular (equivale a dplyr/tidyr).
+# `pandas` (alias `pd`) es la librería base de estructuras tabulares (`DataFrame` y `Series`);
+# equivale al ecosistema `dplyr` / `tidyr` / `readr` de R.
 import pandas as pd
 
-# Importamos desde `config.py` todas las rutas y listas de columnas centralizadas
-# para no escribir nombres ni rutas "quemadas" (hardcoded) dentro de las funciones.
+# Importamos desde `config.py` las constantes globales (rutas, listas de columnas y CRS)
+# para mantener un único punto de configuración en todo el proyecto.
 from src.ingesta.config import (
-    COLUMNAS_CATEGORICAS_FINALES,  # Lista de las 12 columnas de texto que pasarán a `category`.
-    COLUMNAS_FINALES_21,           # Orden exacto de las 21 columnas del dataset final.
-    CRS_OBJETIVO,                  # Código EPSG:4326 (sistema global WGS84 en grados decimales).
-    MAPEO_COLUMNAS,                # Diccionario X2 -> codigo_caso (respaldo si entran nombres crudos).
-    MAPEO_COORDENADAS_FINALES,     # Diccionario {"lat_num": "latitud", "lon_num": "longitud"}.
-    PROCESSED_GEORREFERENCIADO,    # Ruta de entrada: data/processed/homi_georreferenciado.parquet.
-    SALIDA_CSV_FINAL,              # Ruta de salida 5.2: homi_Final_Continental_Etiquetado.csv.
-    SALIDA_GPKG_FINAL,             # Ruta de salida 5.4: homi_final.gpkg.
-    SALIDA_PARQUET_FINAL,          # Ruta de salida 5.3: homi_final.parquet.
+    COLUMNAS_CATEGORICAS_FINALES,  # Lista de las 12 columnas nominales que se convertirán a `category`.
+    COLUMNAS_FINALES_21,           # Lista ordenada de las 21 columnas del dataset final.
+    CRS_OBJETIVO,                  # Código entero `4326` (sistema geodésico mundial WGS84).
+    MAPEO_COLUMNAS,                # Diccionario `{"X2": "codigo_caso", ...}` por compatibilidad con crudos.
+    MAPEO_COORDENADAS_FINALES,     # Diccionario `{"lat_num": "latitud", "lon_num": "longitud"}`.
+    PROCESSED_GEORREFERENCIADO,    # Ruta de entrada: `data/processed/homi_georreferenciado.parquet`.
+    SALIDA_CSV_FINAL,              # Ruta de salida 5.2: `homi_Final_Continental_Etiquetado.csv`.
+    SALIDA_GPKG_FINAL,             # Ruta de salida 5.4: `homi_final.gpkg`.
+    SALIDA_PARQUET_FINAL,          # Ruta de salida 5.3: `homi_final.parquet`.
 )
 
-# Conjuntos internos de columnas por tipo de dato objetivo (prefijo "_" = constante privada del módulo).
-# Definir estas listas arriba hace que la función de tipado sea fácil de leer y mantener.
+# ── Constantes privadas del módulo (convención: guion bajo inicial `_`) ──
+# En Python no existe la palabra reservada `private` (como en Java o C#). Por convención
+# PEP 8, iniciar un nombre con `_` indica a otros desarrolladores que esta variable es de
+# uso interno exclusivo de `exportador.py` y no forma parte de su interfaz externa.
+# Anotación de tipo `list[str]`: declara explícitamente que es una lista cuyos elementos son cadenas `str`.
 _COLUMNAS_ENTERO_NULABLE: list[str] = [
-    "anio_hecho",          # Año de ocurrencia (ej. 2010..2024).
-    "AUX_HORA_SISTEMA",    # Hora registrada en sistema policial (0..23).
-    "AUX_MINUTO_SISTEMA",  # Minuto registrado en sistema policial (0..59).
+    "anio_hecho",          # Año cronológico del evento (2010..2024).
+    "AUX_HORA_SISTEMA",    # Hora entera registrada en sistema (0..23).
+    "AUX_MINUTO_SISTEMA",  # Minuto entero registrado en sistema (0..59).
 ]
 
 _COLUMNAS_FLOTANTES: list[str] = [
-    "hora_aproximada",  # Admite horas decimales (ej. 19.5 = 19h30, 19.6667 = 19h40).
-    "edad_victima",     # Admite decimales en lactantes (ej. 0.25 años = 3 meses) y valores vacíos NaN.
+    "hora_aproximada",  # Hora expresada en decimales (ej. 19.5 = 19h30, 19.6667 = 19h40).
+    "edad_victima",     # Edad en años; requiere `float64` porque incluye decimales en lactantes (ej. 0.25) y `NaN`.
     "latitud",          # Coordenada geográfica Y validada/reparada en grados decimales.
     "longitud",         # Coordenada geográfica X validada/reparada en grados decimales.
 ]
@@ -69,6 +79,9 @@ _COLUMNAS_FLOTANTES: list[str] = [
 # =========================================================================
 # PASO 5.1 — Selección y renombrado definitivo de las 21 columnas limpias
 # =========================================================================
+# Anotaciones de tipo (Type Hints) en la firma `def funcion(df: pd.DataFrame) -> pd.DataFrame:`:
+#   • `df: pd.DataFrame`  → el parámetro de entrada `df` debe ser una tabla `DataFrame` de Pandas.
+#   • `-> pd.DataFrame`   → la función devuelve como resultado un nuevo `DataFrame` de Pandas.
 def seleccionar_y_estandarizar_columnas(df: pd.DataFrame) -> pd.DataFrame:
     r"""
     Selecciona las 21 columnas definitivas, homologa coordenadas y asigna tipos óptimos.
@@ -88,14 +101,14 @@ def seleccionar_y_estandarizar_columnas(df: pd.DataFrame) -> pd.DataFrame:
         as.numeric(x)                      →  pd.to_numeric(s, errors="coerce").astype("float64")
         as.factor(x)                       →  s.astype("string").astype("category")
 
-    ¿Por qué reemplazamos `latitud`/`longitud` por `lat_num`/`lon_num`?
-        En `homi_georreferenciado.parquet` (salida de la Fase 4) coexisten:
-          • `latitud` y `longitud`: los textos crudos originales del CSV (algunos sin punto decimal).
-          • `lat_num` y `lon_num`: los números decimales ya validados y reparados en la Fase 4.
-          • `ID_temp`: el identificador secuencial temporal usado en las auditorías espaciales.
-        Aquí seleccionamos `lat_num` y `lon_num`, descartamos las cadenas crudas y `ID_temp`,
-        y renombramos `lat_num` → `latitud` y `lon_num` → `longitud` para cumplir exactamente
-        con las 21 variables documentadas en `docs/diccionario_datos.md`.
+    ¿Por qué sustituimos `latitud`/`longitud` por `lat_num`/`lon_num`?
+        En `homi_georreferenciado.parquet` (salida de la Fase 4) coexisten 24 columnas:
+          • `latitud` y `longitud`: cadenas de texto originales del CSV crudo (algunas sin punto decimal).
+          • `lat_num` y `lon_num`: coordenadas numéricas (`float64`) ya validadas y reparadas en Fase 4.
+          • `ID_temp`: llave entera secuencial creada solo para auditar intersecciones espaciales.
+        Aquí tomamos `lat_num` y `lon_num`, descartamos las cadenas crudas e `ID_temp`, y
+        renombramos `lat_num` → `latitud` y `lon_num` → `longitud` para obtener las 21 columnas
+        exactas documentadas en `docs/diccionario_datos.md`.
 
     Parameters
     ----------
@@ -116,21 +129,30 @@ def seleccionar_y_estandarizar_columnas(df: pd.DataFrame) -> pd.DataFrame:
     """
     print("  [5.1] Selección, homologación y tipado estricto de las 21 columnas finales")
 
-    # ── Validación defensiva: evitar procesar una tabla vacía ──
-    # `len(df) == 0` comprueba si el DataFrame tiene cero filas.
+    # ── 1. Validación defensiva de entrada vacía ──
+    # `len(df)` devuelve el número de filas del DataFrame (equivale a `nrow(df)` en R).
+    # Si entran 0 filas, detenemos la ejecución temprano lanzando una excepción `ValueError`.
     if len(df) == 0:
         raise ValueError(
             "El DataFrame de entrada para la Fase 5 está vacío (0 filas). "
             "Verifique la salida de la Fase 4."
         )
 
-    # Creamos una copia independiente (`.copy()`) para no alterar por accidente
-    # el DataFrame que `main.py` mantiene en memoria (principio de inmutabilidad).
+    # ── 2. Copia defensiva en memoria ──
+    # En Python, pasar un DataFrame a una función pasa una REFERENCIA al mismo objeto en RAM.
+    # Si modificáramos `df` directamente, alteraríamos la variable original fuera de esta función.
+    # `.copy()` reserva un DataFrame independiente para trabajar sin efectos secundarios.
     df_trabajo = df.copy()
 
-    # ── Respaldo de compatibilidad con nombres crudos heredados de R ──
-    # Si alguien invoca esta función con columnas crudas ("X2", "X4", "lat.new", "lon.new"),
-    # construimos un diccionario solo con las claves que existan y cuyo destino no exista aún.
+    # ── 3. Respaldo de compatibilidad con nombres heredados del script R ──
+    # Desglose técnico de esta comprensión de diccionario (dict comprehension):
+    #   • `{**MAPEO_COLUMNAS, "lat.new": "lat_num", "lon.new": "lon_num"}`:
+    #       El operador `**` desempaqueta todos los pares `clave: valor` de `MAPEO_COLUMNAS`
+    #       dentro de un diccionario temporal nuevo y le añade dos equivalencias extra de R.
+    #   • `.items()`: entrega cada par `(col_cruda, col_limpia)` para iterar en el `for`.
+    #   • `if col_cruda in df_trabajo.columns and col_limpia not in df_trabajo.columns`:
+    #       Solo incluye el renombrado si la columna vieja existe en la tabla Y el nombre
+    #       nuevo todavía no existe (evitando crear dos columnas con el mismo nombre).
     mapeo_respaldo = {
         col_cruda: col_limpia
         for col_cruda, col_limpia in {
@@ -140,46 +162,58 @@ def seleccionar_y_estandarizar_columnas(df: pd.DataFrame) -> pd.DataFrame:
         }.items()
         if col_cruda in df_trabajo.columns and col_limpia not in df_trabajo.columns
     }
+    # En Python, un diccionario no vacío evalúa como `True`; uno vacío `{}` evalúa como `False`.
     if mapeo_respaldo:
-        # `.rename(columns=...)` cambia los nombres de las columnas según el diccionario.
+        # `.rename(columns=...)` devuelve un DataFrame con los encabezados actualizados.
         df_trabajo = df_trabajo.rename(columns=mapeo_respaldo)
 
-    # ── Construir la lista de 21 columnas de origen antes del renombrado final ──
-    # Si la tabla trae `lat_num` y `lon_num` (salida estándar de la Fase 4), las elegimos
-    # en la posición de `latitud` y `longitud`, descartando así las columnas `latitud`/`longitud`
-    # de texto crudo y cualquier columna auxiliar como `ID_temp` o `geometry`.
+    # ── 4. Determinar qué columnas de coordenadas seleccionar ──
+    # Verificamos con el operador `in` si ambas columnas numéricas reparadas en la Fase 4
+    # están disponibles dentro del índice de columnas `df_trabajo.columns`.
     usar_coords_reparadas = (
         "lat_num" in df_trabajo.columns and "lon_num" in df_trabajo.columns
     )
 
     if usar_coords_reparadas:
-        # Comprensión de lista: recorre `COLUMNAS_FINALES_21` en orden; cuando encuentra
-        # "latitud" pone "lat_num", cuando encuentra "longitud" pone "lon_num", y el resto igual.
+        # Si existen `lat_num` y `lon_num`, armamos la lista `columnas_origen` sustituyendo
+        # temporalmente `"latitud"` por `"lat_num"` y `"longitud"` por `"lon_num"`.
+        # ¿Cómo funciona `diccionario.get(clave, valor_por_defecto)`?
+        #   • Si `col` es `"latitud"`, lo encuentra en `mapeo_inverso_coords` y devuelve `"lat_num"`.
+        #   • Si `col` es `"codigo_caso"`, NO está en `mapeo_inverso_coords`, así que devuelve
+        #     el segundo argumento (`col`, es decir `"codigo_caso"` intacto).
+        # Así conservamos el orden exacto de las 21 columnas y dejamos fuera las cadenas crudas.
         mapeo_inverso_coords = {"latitud": "lat_num", "longitud": "lon_num"}
         columnas_origen = [
             mapeo_inverso_coords.get(col, col) for col in COLUMNAS_FINALES_21
         ]
     else:
-        # Si ya venían como `latitud` y `longitud` numéricas, usamos la lista directa.
+        # Si el DataFrame ya venía con `latitud` y `longitud` limpias (sin `lat_num`/`lon_num`),
+        # copiamos la lista estándar con `list(...)`.
         columnas_origen = list(COLUMNAS_FINALES_21)
 
-    # ── Verificar que no falte ninguna de las 21 columnas requeridas ──
+    # ── 5. Auditoría de completitud de esquema (21 columnas obligatorias) ──
+    # Comprensión de lista que recolecta cualquier columna requerida que no esté presente.
     columnas_faltantes = [
         col for col in columnas_origen if col not in df_trabajo.columns
     ]
     if columnas_faltantes:
+        # `KeyError` es la excepción estándar en Python/Pandas cuando falta una llave o columna.
         raise KeyError(
             f"Faltan {len(columnas_faltantes)} columnas obligatorias para la Fase 5: "
             f"{columnas_faltantes}"
         )
 
-    # ── Patrón arquitectónico: df[columnas_origen].rename(columns={...}) ──
-    # En una sola expresión encadenada:
-    #   1. `df_trabajo[columnas_origen]` filtra y ordena las 21 columnas deseadas
-    #      (dejando fuera `ID_temp`, las coordenadas de texto crudo y extras).
-    #   2. `.rename(columns=MAPEO_COORDENADAS_FINALES)` renombra `lat_num` → `latitud`
-    #      y `lon_num` → `longitud` (si no están, pandas simplemente ignora esas claves).
-    #   3. `.copy()` garantiza un bloque de memoria limpio y propio.
+    # ── 6. Selección estructural y renombrado definitivo ──
+    # Desglose paso a paso del encadenamiento de métodos (method chaining):
+    #   1. `df_trabajo[columnas_origen]`:
+    #        Indexación con lista de nombres: proyecta únicamente esas 21 columnas en ese
+    #        orden exacto, descartando automáticamente `ID_temp`, `latitud`/`longitud` crudas
+    #        y cualquier otra columna residual.
+    #   2. `.rename(columns=MAPEO_COORDENADAS_FINALES)`:
+    #        Renombra `"lat_num"` → `"latitud"` y `"lon_num"` → `"longitud"`.
+    #        (Si esas claves no estaban porque entró por el `else`, Pandas las ignora sin error).
+    #   3. `.copy()`:
+    #        Materializa el nuevo DataFrame en memoria para evitar advertencias `SettingWithCopyWarning`.
     df_final = (
         df_trabajo[columnas_origen]
         .rename(columns=MAPEO_COORDENADAS_FINALES)
@@ -187,47 +221,61 @@ def seleccionar_y_estandarizar_columnas(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     # =====================================================================
-    # CONVERSIÓN EXPLÍCITA DE TIPOS DE DATOS (CASTING)
+    # 7. CONVERSIÓN EXPLÍCITA DE TIPOS DE DATOS (TYPE CASTING)
     # =====================================================================
 
-    # 1. Identificador policial → tipo `string` nativo de pandas (preserva pd.NA si existiera).
+    # 7.1 Identificador policial → `string` (StringDtype de Pandas).
+    #     A diferencia de `object` (que puede mezclar cualquier tipo de objeto Python),
+    #     `"string"` garantiza que toda celda sea texto o el valor faltante tipado `pd.NA`.
     df_final["codigo_caso"] = df_final["codigo_caso"].astype("string")
 
-    # 2. Fecha exacta del hecho → tipo `datetime64[ns]` (permite series temporales en Fase 6).
-    #    `errors="coerce"` convierte cualquier texto inválido en `NaT` (Not a Time) sin colapsar.
+    # 7.2 Fecha del incidente → `datetime64[ns]`.
+    #     `pd.to_datetime(..., errors="coerce")` parsea cadenas ISO `"YYYY-MM-DD"` a fechas reales.
+    #     El parámetro `errors="coerce"` convierte fechas malformadas en `NaT` (Not a Time)
+    #     en lugar de abortar la ejecución con un `ValueError`.
     df_final["fecha_hecho"] = pd.to_datetime(
         df_final["fecha_hecho"], errors="coerce"
     )
 
-    # 3. Variables enteras → tipo `Int64` (con "I" mayúscula = entero nulable de pandas,
-    #    que soporta valores faltantes `pd.NA` a diferencia del `int64` clásico de NumPy).
+    # 7.3 Variables discretas enteras → `Int64` (entero nulable de 64 bits).
+    #     Recorremos la lista `_COLUMNAS_ENTERO_NULABLE` con un bucle `for`:
+    #       • `pd.to_numeric(..., errors="coerce")`: convierte textos como `"20"` a número (`20.0`).
+    #       • `.round()`: redondea cualquier residuo flotante antes del casteo entero.
+    #       • `.astype("Int64")`: convierte al tipo entero nulable de Pandas (con "I" mayúscula).
     for col_int in _COLUMNAS_ENTERO_NULABLE:
-        # Primero convertimos a numérico decimal, redondeamos por seguridad y pasamos a Int64.
         df_final[col_int] = (
             pd.to_numeric(df_final[col_int], errors="coerce")
             .round()
             .astype("Int64")
         )
 
-    # 4. Variables continuas/decimales → tipo `float64` (doble precisión IEEE 754).
+    # 7.4 Variables continuas decimales → `float64` (punto flotante IEEE 754 de 64 bits).
+    #     Preserva fracciones horarias (`19.5`), edades decimales de lactantes (`0.25`),
+    #     valores desconocidos (`NaN`) y toda la precisión decimal de `latitud` y `longitud`.
     for col_float in _COLUMNAS_FLOTANTES:
         df_final[col_float] = pd.to_numeric(
             df_final[col_float], errors="coerce"
         ).astype("float64")
 
-    # 5. Variables categóricas nominales (las 12 columnas de texto normalizadas en Fase 2)
-    #    → tipo `category` (equivalente directo al `factor` de R).
-    #    ¿Por qué pasar primero por `.astype("string")` y luego `.astype("category")`?
-    #    Porque si una columna viene con mezcla de `object`/`None`/`NaN`, el paso intermedio
-    #    por `"string"` unifica los textos y convierte los nulos limpiamente sin crear una
-    #    categoría falsa llamada `"None"` o `"nan"`.
+    # 7.5 Variables nominales de baja cardinalidad → `category` (CategoricalDtype).
+    #     Desglose técnico de `.astype("string").astype("category")`:
+    #       • Si hiciéramos `.astype(str)` (tipo `str` básico de Python), un valor nulo `None`
+    #         se transformaría en la palabra literal `"None"`, creando una categoría falsa.
+    #       • En cambio, `.astype("string")` convierte `None`/`np.nan` en `pd.NA` real, y al
+    #         encadenar `.astype("category")`, los valores faltantes permanecen como nulos
+    #         mientras los textos válidos se codifican en un diccionario compacto de categorías.
     for col_cat in COLUMNAS_CATEGORICAS_FINALES:
         df_final[col_cat] = (
             df_final[col_cat].astype("string").astype("category")
         )
 
-    # ── Candado final de integridad espacial ──
-    # Ningún registro en el entregable final puede tener latitud o longitud vacía (NaN).
+    # ── 8. Candado final de integridad espacial ──
+    # Desglose de `df_final.dropna(subset=["latitud", "longitud"]).reset_index(drop=True)`:
+    #   • `.dropna(subset=["latitud", "longitud"])`: elimina únicamente las filas donde
+    #     `latitud` O `longitud` sean `NaN` (no elimina filas si `edad_victima` es `NaN`,
+    #     porque `edad_victima` no está en `subset`).
+    #   • `.reset_index(drop=True)`: renumera el índice de filas desde `0, 1, 2, ..., N-1`
+    #     sin huecos, y `drop=True` descarta el índice viejo para no insertarlo como columna extra.
     n_antes = len(df_final)
     df_final = df_final.dropna(subset=["latitud", "longitud"]).reset_index(drop=True)
     n_descartados_nan = n_antes - len(df_final)
@@ -239,6 +287,7 @@ def seleccionar_y_estandarizar_columnas(df: pd.DataFrame) -> pd.DataFrame:
             "Tras validar coordenadas numéricas no quedaron registros válidos para exportar."
         )
 
+    # `{len(df_final):,}` formatea el entero con separador de miles (ej. `38,565`).
     print(
         f"        Esquema consolidado: {len(df_final):,} filas × "
         f"{len(df_final.columns)} columnas limpias"
@@ -246,14 +295,19 @@ def seleccionar_y_estandarizar_columnas(df: pd.DataFrame) -> pd.DataFrame:
     return df_final
 
 
-# Alias semántico compatible con el boceto conceptual de `arquitectura_migracion_r_python.md`.
-# En Python, asignar una función a otro nombre crea un sinónimo directo sin duplicar código.
+# Alias funcional: en Python las funciones son "objetos de primera clase", por lo que
+# asignar `etiquetar_columnas_finales = seleccionar_y_estandarizar_columnas` hace que ambos
+# nombres apunten exactamente a la misma función en memoria (mantiene compatibilidad con
+# el diagrama conceptual de la guía de arquitectura sin duplicar código).
 etiquetar_columnas_finales = seleccionar_y_estandarizar_columnas
 
 
 # =========================================================================
 # PASO 5.2 — Exportación a formato CSV (interoperabilidad universal)
 # =========================================================================
+# Parámetro con valor por defecto `ruta_salida: Path = SALIDA_CSV_FINAL`:
+#   Si quien llama a `exportar_csv(df)` omite el segundo argumento, Python usa automáticamente
+#   `SALIDA_CSV_FINAL`. En los tests unitarios podemos pasar una ruta temporal `tmp_path / "x.csv"`.
 def exportar_csv(
     df: pd.DataFrame,
     ruta_salida: Path = SALIDA_CSV_FINAL,
@@ -281,30 +335,32 @@ def exportar_csv(
     Returns
     -------
     Path
-        Ruta absoluta del archivo CSV generado.
+        Ruta del archivo CSV generado.
 
     Raises
     ------
     PermissionError
-        Si el archivo destino está bloqueado por otro programa (ej. Microsoft Excel).
+        Si el archivo destino está bloqueado por otro proceso del sistema operativo (ej. Excel).
     """
     print("  [5.2] Exportación a formato CSV (UTF-8)")
 
-    # Convertimos a objeto Path por si quien llama a la función pasó un texto `str`.
+    # Normalizamos `ruta_salida` a un objeto `Path` (por si el llamador pasó un `str` común).
     ruta_salida = Path(ruta_salida)
 
-    # Creamos la carpeta `data/processed/` automáticamente si aún no existe:
-    #   `parents=True` crea carpetas intermedias; `exist_ok=True` no falla si ya existe.
+    # Garantizamos que exista la carpeta contenedora (`ruta_salida.parent`, ej. `data/processed/`):
+    #   • `parents=True`: crea todos los directorios padre necesarios si no existen.
+    #   • `exist_ok=True`: si la carpeta ya existe, continúa sin lanzar `FileExistsError`.
     ruta_salida.parent.mkdir(parents=True, exist_ok=True)
 
-    # Bloque `try ... except`: equivalente al `tryCatch()` del script R (línea 607).
-    # En Windows, si el usuario tiene el CSV abierto en Excel, el sistema operativo
-    # bloquea el archivo y lanza `PermissionError`. Aquí capturamos ese error para
-    # mostrar una explicación clara en español.
+    # Manejo robusto de bloqueo de archivos (`try ... except PermissionError as exc:`):
+    #   En Windows, abrir un CSV en Microsoft Excel adquiere un bloqueo exclusivo (file lock)
+    #   a nivel de sistema operativo. Si intentamos sobrescribirlo, Python recibe `PermissionError`.
+    #   Capturamos ese error específico y relanzamos una explicación clara conservando la causa
+    #   técnica original mediante `from exc` (exception chaining).
     try:
-        # `index=False` evita que pandas escriba una columna extra "0, 1, 2..." al inicio
-        # (exactamente igual que `row.names = FALSE` en R).
-        # `encoding="utf-8"` asegura compatibilidad universal de caracteres.
+        # `index=False` impide escribir el índice numérico (0, 1, 2...) como primera columna
+        # anónima (equivale exactamente a `row.names = FALSE` en R).
+        # `encoding="utf-8"` fija la codificación estándar internacional de caracteres.
         df.to_csv(ruta_salida, index=False, encoding="utf-8")
     except PermissionError as exc:
         raise PermissionError(
@@ -313,7 +369,8 @@ def exportar_csv(
             "ciérrelo y vuelva a ejecutar el pipeline."
         ) from exc
 
-    # Calculamos el peso del archivo en megabytes (1 MB = 1024 * 1024 bytes) para el log.
+    # `.stat().st_size` consulta al sistema de archivos el tamaño exacto en bytes;
+    # dividir entre `1024 * 1024` (1,048,576 bytes) lo expresa en Megabytes (MiB).
     tamanio_mb = ruta_salida.stat().st_size / (1024 * 1024)
     print(f"        Guardado: {ruta_salida} ({tamanio_mb:.2f} MB)")
     return ruta_salida
@@ -333,12 +390,13 @@ def exportar_parquet(
     Equivalencia R (Fase 10 y 13, líneas 504 y 615):
         saveRDS(homi_Analisis_Final, file = "homi_Final_Continental_Etiquetado.rds")
 
-    ¿Por qué Parquet reemplaza a `.rds`?
-        • Conserva intactos los metadatos de tipos (`datetime64`, `Int64`, `float64`,
-          diccionarios de `category` y `string`), algo que el CSV pierde por completo.
-        • Almacenamiento columnar comprimido con `snappy`: ocupa ~4-6 veces menos espacio
-          en disco que el CSV y se carga en milisegundos en la Fase 6 (Series Temporales).
-        • Es un estándar abierto legible desde Python (Pandas, Polars, DuckDB), R (`arrow`) y Spark.
+    ¿Por qué Parquet reemplaza técnicamente a `.rds`?
+        • Esquema embebido (self-describing): almacena en sus metadatos internos el tipo exacto
+          de cada columna (`datetime64[ns]`, `Int64`, `float64`, diccionarios `category` y `string`).
+          Al hacer `pd.read_parquet(...)` en la Fase 6, la tabla se reconstruye idéntica sin re-parsear.
+        • Orientación por columnas + compresión `snappy`: agrupa valores homogéneos contiguos en disco,
+          reduciendo el tamaño de ~6.5 MB (CSV) a ~1.3 MB y acelerando lecturas selectivas de columnas.
+        • Interoperabilidad abierta: compatible con Pandas, Polars, DuckDB, Spark y el paquete `arrow` de R.
 
     Parameters
     ----------
@@ -347,21 +405,22 @@ def exportar_parquet(
     ruta_salida : Path, optional
         Ruta destino del Parquet. Por defecto `data/processed/homi_final.parquet`.
     compresion : str, optional
-        Algoritmo de compresión de bloques (por defecto `"snappy"`).
+        Códec de compresión de páginas Parquet (por defecto `"snappy"`, óptimo en velocidad/ratio).
 
     Returns
     -------
     Path
-        Ruta absoluta del archivo Parquet generado.
+        Ruta del archivo Parquet generado.
     """
     print(f"  [5.3] Exportación a formato Parquet (pyarrow + {compresion})")
 
     ruta_salida = Path(ruta_salida)
     ruta_salida.parent.mkdir(parents=True, exist_ok=True)
 
-    # `engine="pyarrow"` utiliza la implementación oficial en C++ de Apache Arrow,
-    # preservando el esquema exacto de pandas (categorías, fechas y enteros nulables)
-    # dentro de los metadatos internos del archivo Parquet.
+    # `df.to_parquet(...)`:
+    #   • `index=False`: no serializa el RangeIndex secuencial innecesario.
+    #   • `engine="pyarrow"`: usa el motor C++ de Apache Arrow para escritura vectorizada.
+    #   • `compression=compresion`: aplica compresión Snappy por bloques columnares.
     df.to_parquet(
         ruta_salida,
         index=False,
@@ -382,56 +441,62 @@ def construir_geodataframe_final(
     crs_epsg: int = CRS_OBJETIVO,
 ) -> gpd.GeoDataFrame:
     r"""
-    Convierte el DataFrame tabular final en un `GeoDataFrame` con CRS `EPSG:4326`.
+    Convierte el DataFrame tabular final en un `GeoDataFrame` espacial con CRS `EPSG:4326`.
 
     Equivalencia R (Fase 10, línea 495):
         homi_Nueva_espacial <- st_as_sf(homi_Nueva, coords = c("lon.new", "lat.new"), crs = 4326)
 
-    ¡Atención al orden de las coordenadas!
-        En cartografía matemática, el plano cartesiano es `(X, Y)`:
-          • Eje X (horizontal) = `longitud` (Este-Oeste, ej. -79.88 en Guayaquil).
-          • Eje Y (vertical)   = `latitud`  (Norte-Sur, ej. -2.18 en Guayaquil).
-        Por eso `gpd.points_from_xy(df["longitud"], df["latitud"])` recibe PRIMERO
-        la longitud y SEGUNDO la latitud, exactamente igual que `coords = c("lon.new", "lat.new")` en R.
+    Convención matemática del orden `(X, Y)` en SIG:
+        En geometría cartesiana y en librerías geoespaciales (`sf`, `GeoPandas`, `GDAL`, `PostGIS`),
+        toda coordenada puntual se construye siempre en orden `(X, Y)`:
+          • `X` = `longitud` (desplazamiento Este-Oeste respecto a Greenwich; ej. `-79.8891`).
+          • `Y` = `latitud`  (desplazamiento Norte-Sur respecto al Ecuador; ej. `-2.1894`).
+        Invertir el orden situaría los puntos en el océano Antártico; por eso pasamos
+        explícitamente `gpd.points_from_xy(df["longitud"], df["latitud"])`.
 
     Parameters
     ----------
     df : pd.DataFrame
         DataFrame con las columnas numéricas `longitud` y `latitud`.
     crs_epsg : int, optional
-        Código EPSG del Sistema de Referencia de Coordenadas (por defecto `4326` = WGS84).
+        Código numérico EPSG del sistema de referencia espacial (`4326` = WGS84).
 
     Returns
     -------
     gpd.GeoDataFrame
-        Capa vectorial de puntos lista para exportar o graficar.
+        Tabla espacial que conserva las 21 columnas + la columna activa `geometry` de tipo `Point`.
 
     Raises
     ------
     KeyError
-        Si el DataFrame no contiene las columnas `latitud` y `longitud`.
+        Si el DataFrame no contiene `latitud` o `longitud`.
     ValueError
-        Si existen coordenadas `NaN` en `latitud` o `longitud`.
+        Si alguna fila presenta `NaN` en `latitud` o `longitud`.
     """
-    # Verificamos que ambas columnas de coordenadas estén presentes.
+    # Recorremos la tupla `("latitud", "longitud")` verificando existencia de ambas columnas.
     for col_coord in ("latitud", "longitud"):
         if col_coord not in df.columns:
             raise KeyError(
                 f"No se encontró la columna '{col_coord}' para construir el GeoDataFrame."
             )
 
-    # Verificamos que no existan valores vacíos (NaN) antes de crear geometrías Point.
+    # Desglose de `df["latitud"].isna().any()`:
+    #   • `.isna()` devuelve una Serie booleana (`True` donde hay `NaN`, `False` donde hay número).
+    #   • `.any()` devuelve `True` si AL MENOS UNA fila es `True` (equivale a `any(is.na(x))` en R).
     if df["latitud"].isna().any() or df["longitud"].isna().any():
         raise ValueError(
             "Existen valores NaN en 'latitud' o 'longitud'. "
             "Filtre o repare las coordenadas antes de construir el GeoDataFrame."
         )
 
-    # `gpd.points_from_xy(x, y)` crea de forma vectorizada (en C, sin bucles `for`)
-    # un arreglo de objetos geométricos `Point(longitud, latitud)` para todas las filas.
+    # `gpd.points_from_xy(x, y)` construye en C (mediante Shapely 2 / GEOS vectorizado) un
+    # `GeometryArray` con objetos `Point(lon, lat)` sin iterar fila por fila en Python.
     geometria_puntos = gpd.points_from_xy(df["longitud"], df["latitud"])
 
-    # Empaquetamos los atributos + la columna `geometry` + el CRS `EPSG:4326` en un GeoDataFrame.
+    # Instanciamos el `GeoDataFrame` acoplando:
+    #   • `df.copy()`: copia de las 21 columnas de atributos.
+    #   • `geometry=geometria_puntos`: designa la columna geométrica activa.
+    #   • `crs=f"EPSG:{crs_epsg}"`: asigna metadatos de proyección `"EPSG:4326"`.
     gdf = gpd.GeoDataFrame(
         df.copy(),
         geometry=geometria_puntos,
@@ -440,6 +505,10 @@ def construir_geodataframe_final(
     return gdf
 
 
+# Anotación de unión de tipos `datos: pd.DataFrame | gpd.GeoDataFrame`:
+#   El operador `|` (introducido en Python 3.10) significa "puede ser A o B".
+#   Permite que esta función acepte indistintamente una tabla normal `DataFrame`
+#   (y ella misma construya los puntos) o un `GeoDataFrame` ya armado.
 def exportar_geopackage(
     datos: pd.DataFrame | gpd.GeoDataFrame,
     ruta_salida: Path = SALIDA_GPKG_FINAL,
@@ -452,61 +521,65 @@ def exportar_geopackage(
     Equivalencia R (Fase 10, línea 500):
         st_write(homi_Nueva_espacial, "homi_Nueva.shp", delete_layer = TRUE, quiet = TRUE)
 
-    Nota arquitectónica — ¿Por qué `.gpkg` reemplaza al formato legado `.shp` (Shapefile)?
-        El formato ESRI Shapefile fue diseñado en los años 90 y sufre limitaciones severas:
-          1. Trunca los nombres de columna a 10 caracteres (`motivacion_detalle` → `motivacion`,
-             `nacionalidad_victima` → `nacionalid`), rompiendo la trazabilidad del diccionario.
-          2. Dispersa el mapa en 4 a 7 archivos sueltos (`.shp`, `.shx`, `.dbf`, `.prj`, `.cpg`).
-          3. Límite físico de 2 GB y problemas históricos de codificación con caracteres UTF-8.
-        **GeoPackage (`.gpkg`)** almacena geometrías, atributos con nombres completos, tipos de
-        fecha/numéricos, índice espacial R-tree y proyección CRS dentro de **un único archivo**
-        SQLite estandarizado por el Open Geospatial Consortium (OGC), nativo en QGIS y ArcGIS Pro.
+    Justificación arquitectónica (`.gpkg` frente al formato legado `.shp`):
+        El formato ESRI Shapefile (`.shp`) presenta restricciones técnicas obsoletas:
+          1. Su tabla de atributos dBASE (`.dbf`) trunca todo nombre de columna a 10 caracteres
+             ASCII (`motivacion_detalle` → `motivacion`, `nacionalidad_victima` → `nacionalid`).
+          2. Requiere múltiples archivos acoplados (`.shp`, `.shx`, `.dbf`, `.prj`, `.cpg`); si
+             falta uno al copiar la carpeta, la capa queda inutilizable.
+          3. No almacena tipos `datetime` completos con hora ni supera 2 GB por componente.
+        **OGC GeoPackage (`.gpkg`)** encapsula geometrías WKB, índice espacial R-tree, CRS y
+        atributos con nombres íntegros en UTF-8 dentro de **un único contenedor SQLite**,
+        soportado de forma nativa en QGIS, ArcGIS Pro, GeoPandas, PostGIS y `sf` de R.
 
     Parameters
     ----------
     datos : pd.DataFrame or gpd.GeoDataFrame
-        Tabla estandarizada (se convierte automáticamente a GeoDataFrame) o GeoDataFrame ya creado.
+        Tabla estandarizada de 21 columnas o GeoDataFrame con geometría puntual.
     ruta_salida : Path, optional
-        Ruta destino del GeoPackage. Por defecto `data/processed/homi_final.gpkg`.
+        Ruta destino del archivo `.gpkg`. Por defecto `data/processed/homi_final.gpkg`.
     nombre_capa : str, optional
-        Nombre interno de la tabla espacial dentro del contenedor GeoPackage.
+        Nombre de la tabla espacial interna dentro del GeoPackage.
     crs_epsg : int, optional
-        Código EPSG a utilizar si `datos` es un `pd.DataFrame` (por defecto `4326`).
+        Código EPSG objetivo (por defecto `4326`).
 
     Returns
     -------
     Path
-        Ruta absoluta del archivo `.gpkg` generado.
+        Ruta del archivo `.gpkg` generado.
     """
     print("  [5.4] Exportación geoespacial a OGC GeoPackage (.gpkg, EPSG:4326)")
 
     ruta_salida = Path(ruta_salida)
     ruta_salida.parent.mkdir(parents=True, exist_ok=True)
 
-    # `isinstance(obj, Clase)` comprueba de qué tipo es un objeto.
-    # Si ya nos pasaron un GeoDataFrame con geometría activa, verificamos su CRS;
-    # si nos pasaron un DataFrame común de pandas, construimos el GeoDataFrame aquí mismo.
+    # `isinstance(objeto, Clase)` comprueba en tiempo de ejecución si `datos` ya es un `GeoDataFrame`.
     if isinstance(datos, gpd.GeoDataFrame) and datos.geometry is not None:
         gdf_salida = datos.copy()
+        # Si el GeoDataFrame no tenía CRS declarado (`None`), se lo asignamos con `.set_crs()`;
+        # si tenía otro CRS distinto (ej. UTM `32717`), lo reproyectamos matemáticamente con `.to_crs()`.
         if gdf_salida.crs is None:
             gdf_salida = gdf_salida.set_crs(epsg=crs_epsg)
         elif gdf_salida.crs.to_epsg() != crs_epsg:
             gdf_salida = gdf_salida.to_crs(epsg=crs_epsg)
     else:
+        # Si entró un `pd.DataFrame` tabular común, delegamos la creación espacial al helper anterior.
         gdf_salida = construir_geodataframe_final(datos, crs_epsg=crs_epsg)
 
-    # Si existía un archivo `.gpkg` previo de una corrida anterior, lo reemplazamos
-    # limpiamente para evitar capas huérfanas (equivalente a `delete_layer = TRUE` en R).
+    # Equivalente limpio a `delete_layer = TRUE` de `sf::st_write()`:
+    # Si existe un `.gpkg` de una ejecución previa, `.unlink()` elimina el archivo anterior
+    # para escribir un contenedor SQLite limpio y compacto desde cero.
     if ruta_salida.exists():
         try:
-            ruta_salida.unlink()  # `.unlink()` borra el archivo previo del disco.
+            ruta_salida.unlink()
         except PermissionError as exc:
             raise PermissionError(
                 f"No se pudo actualizar '{ruta_salida}'. "
                 "Si el archivo está abierto en QGIS o ArcGIS, ciérrelo e intente de nuevo."
             ) from exc
 
-    # `to_file(..., driver="GPKG")` escribe la base espacial completa usando pyogrio/GDAL.
+    # `.to_file(..., driver="GPKG", layer=nombre_capa)` invoca el motor vectorial GDAL/pyogrio
+    # en C++ para escribir las 38,565 geometrías puntuales y sus 21 atributos en pocos segundos.
     gdf_salida.to_file(ruta_salida, driver="GPKG", layer=nombre_capa)
 
     tamanio_mb = ruta_salida.stat().st_size / (1024 * 1024)
@@ -520,6 +593,8 @@ def exportar_geopackage(
 # =========================================================================
 # ORQUESTADOR DE EXPORTACIÓN MULTIFORMATO (Pasos 5.2 + 5.3 + 5.4)
 # =========================================================================
+# `-> dict[str, Path]` indica que devuelve un diccionario cuyas claves son cadenas
+# (`"csv"`, `"parquet"`, `"gpkg"`) y cuyos valores son objetos `Path` con las rutas creadas.
 def exportar_todos_formatos(
     df_etiquetado: pd.DataFrame,
     ruta_csv: Path = SALIDA_CSV_FINAL,
@@ -545,7 +620,7 @@ def exportar_todos_formatos(
     dict[str, Path]
         Diccionario con las rutas generadas bajo las claves `"csv"`, `"parquet"` y `"gpkg"`.
     """
-    # Ejecutamos cada exportador especializado y guardamos su ruta resultante.
+    # Invocamos cada función especializada y capturamos la ruta verificada que retorna.
     archivo_csv = exportar_csv(df_etiquetado, ruta_salida=ruta_csv)
     archivo_parquet = exportar_parquet(df_etiquetado, ruta_salida=ruta_parquet)
     archivo_gpkg = exportar_geopackage(df_etiquetado, ruta_salida=ruta_gpkg)
@@ -560,6 +635,8 @@ def exportar_todos_formatos(
 # =========================================================================
 # EJECUCIÓN AUTÓNOMA DESDE EL ARTEFACTO GEORREFERENCIADO
 # =========================================================================
+# `-> tuple[pd.DataFrame, dict[str, Path]]`: devuelve una tupla de 2 posiciones:
+#   1) el DataFrame ya estandarizado y 2) el diccionario de rutas exportadas.
 def ejecutar_exportacion_autonoma(
     ruta_entrada: Path = PROCESSED_GEORREFERENCIADO,
 ) -> tuple[pd.DataFrame, dict[str, Path]]:
@@ -580,6 +657,7 @@ def ejecutar_exportacion_autonoma(
         Tupla con `(df_etiquetado, rutas_exportadas)`.
     """
     ruta_entrada = Path(ruta_entrada)
+    # `not ruta_entrada.exists()` comprueba si el archivo Parquet previo aún no existe en disco.
     if not ruta_entrada.exists():
         raise FileNotFoundError(
             f"No existe el artefacto georreferenciado de entrada: '{ruta_entrada}'. "
@@ -596,8 +674,10 @@ def ejecutar_exportacion_autonoma(
     return df_etiquetado, rutas
 
 
-# Si este archivo se ejecuta directamente en consola (`python -m src.exportacion.exportador`),
-# lanza la exportación leyendo la base georreferenciada.
+# Bloque estándar de punto de entrada en Python:
+#   • Si otro módulo importa este archivo (`from src.exportacion.exportador import ...`),
+#     `__name__` vale `"src.exportacion.exportador"` y este `if` NO se ejecuta.
+#   • Si el usuario ejecuta este módulo directamente (`python -m src.exportacion.exportador`),
+#     Python asigna `"__main__"` a `__name__` y entra al bloque ejecutando la exportación.
 if __name__ == "__main__":
     ejecutar_exportacion_autonoma()
-

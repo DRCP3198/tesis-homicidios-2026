@@ -175,6 +175,17 @@ COLUMNAS_TEXTO_NORMALIZAR = [
 # =========================================================================
 # Orden oficial de las 21 columnas limpias según docs/diccionario_datos.md
 # y la arquitectura del proyecto (equivale al dplyr::select() de R Fase 13).
+#
+# Breve guía técnica de los tipos de datos (dtypes) de Pandas usados aquí:
+#   • string        → Texto nativo de Pandas (admite valores faltantes `pd.NA` sin mezclarse con números).
+#   • category      → Equivalente al `factor` de R. En vez de guardar 38,000 veces el texto
+#                     "ECUATORIANA" en memoria, Pandas guarda una tabla pequeña de categorías únicas
+#                     y un código numérico interno por fila (reduce drásticamente el peso en RAM y Parquet).
+#   • datetime64[ns]→ Tipo temporal nativo con precisión de nanosegundos (permite extraer mes, trimestre,
+#                     ordenar cronológicamente e indexar series temporales en la Fase 6).
+#   • Int64         → Entero de 64 bits "nulable" (con "I" mayúscula). A diferencia del `int64` clásico,
+#                     sí soporta celdas vacías (`pd.NA`) sin forzar toda la columna a decimal.
+#   • float64       → Número real de doble precisión (admite decimales en coordenadas, horas y edades).
 COLUMNAS_FINALES_21 = [
     "codigo_caso",           # 1.  str/string — Identificador policial codificado
     "tipo_delito",           # 2.  category   — Tipificación legal
@@ -199,8 +210,9 @@ COLUMNAS_FINALES_21 = [
     "AUX_MINUTO_SISTEMA",    # 21. Int64      — Auditoría de minutos interna (0-59)
 ]
 
-# Las 12 columnas de texto de baja cardinalidad que se convierten a tipo
-# `category` en la Fase 5 (ahorra memoria RAM y acelera agrupaciones).
+# Las 12 columnas de texto de "baja cardinalidad" (pocos valores distintos repetidos en miles de filas,
+# ej. 24 provincias, 7 días, 12 meses) que se convierten a tipo `category` en la Fase 5.
+# NOTA: `codigo_caso` NO se incluye aquí porque casi cada fila tiene un código único (alta cardinalidad).
 COLUMNAS_CATEGORICAS_FINALES = [
     "tipo_delito",
     "mes_hecho",
@@ -218,6 +230,7 @@ COLUMNAS_CATEGORICAS_FINALES = [
 
 # Mapeo que homologa las coordenadas numéricas validadas en la Fase 4
 # (lat_num / lon_num) hacia los nombres definitivos del diccionario de datos.
+# Se pasa a `df.rename(columns=MAPEO_COORDENADAS_FINALES)` en el Paso 5.1.
 MAPEO_COORDENADAS_FINALES = {
     "lat_num": "latitud",
     "lon_num": "longitud",
@@ -229,23 +242,29 @@ MAPEO_COORDENADAS_FINALES = {
 # Cada fase guarda su resultado en un archivo .parquet dentro de data/interim/.
 # Parquet es un formato binario, comprimido y que respeta los tipos de datos
 # (reemplaza al .rds de R). Es mucho más rápido de leer que un CSV.
-INTERIM_RENOMBRADO = INTERIM_DIR / "homi_renombrado.parquet"                # Salida Fase 1
-INTERIM_NORMALIZADO = INTERIM_DIR / "homi_normalizado.parquet"              # Salida Fase 2
-INTERIM_FILTRADO = INTERIM_DIR / "homi_filtrado_2024.parquet"               # Salida Fase 3
-INTERIM_INSULAR_EXCLUIDO = INTERIM_DIR / "homi_insular_excluido.parquet"    # Trazabilidad Fase 3
-INTERIM_GEO_CORRECTOS = INTERIM_DIR / "geo_correctos.parquet"               # Salida Fase 4 (1ra aud.)
-PROCESSED_GEORREFERENCIADO = PROCESSED_DIR / "homi_georreferenciado.parquet"  # Salida Fase 4 (ensamble)
+INTERIM_RENOMBRADO = INTERIM_DIR / "homi_renombrado.parquet"                  # Salida Fase 1 (ingesta)
+INTERIM_NORMALIZADO = INTERIM_DIR / "homi_normalizado.parquet"                # Salida Fase 2 (texto limpio)
+INTERIM_FILTRADO = INTERIM_DIR / "homi_filtrado_2024.parquet"                 # Salida Fase 3 (continental <=2024)
+INTERIM_INSULAR_EXCLUIDO = INTERIM_DIR / "homi_insular_excluido.parquet"      # Trazabilidad Fase 3 (Galápagos)
+INTERIM_GEO_CORRECTOS = INTERIM_DIR / "geo_correctos.parquet"                 # Salida Fase 4 (1ra auditoría sjoin)
+PROCESSED_GEORREFERENCIADO = PROCESSED_DIR / "homi_georreferenciado.parquet"  # Salida Fase 4 (ensamble completo)
 
 # =========================================================================
 # ARCHIVOS DE SALIDA FINAL (Fase 5)
 # =========================================================================
-# Archivos definitivos que se generarán en la Fase 5 (exportación final).
+# Archivos definitivos que se generarán en la Fase 5 (exportación final):
+#   1. CSV UTF-8    → texto plano separado por comas para Excel, R o cualquier software externo.
+#   2. Parquet      → formato columnar binario con tipos preservados para Python (Fase 6).
+#   3. GeoPackage   → contenedor espacial SQLite estándar OGC en un solo archivo `.gpkg`
+#                     (reemplaza al `.shp` antiguo evitando truncar nombres de columnas a 10 letras).
 SALIDA_CSV_FINAL = PROCESSED_DIR / "homi_Final_Continental_Etiquetado.csv"
 SALIDA_PARQUET_FINAL = PROCESSED_DIR / "homi_final.parquet"
-# .gpkg = GeoPackage: formato moderno de mapas en un solo archivo (reemplaza al .shp).
 SALIDA_GPKG_FINAL = PROCESSED_DIR / "homi_final.gpkg"
 
-# Reportes y visualizaciones diagnósticas (Fase 5.5 y 5.6)
+# Reportes estructurados y visualizaciones diagnósticas (Pasos 5.5 y 5.6):
+#   • .json → datos estructurados clave-valor legibles por código o dashboards.
+#   • .md   → tabla ejecutiva en formato Markdown lista para copiar/anexar a la tesis.
+#   • .png  → mapa diagnóstico renderizado a 300 DPI (calidad de impresión editorial).
 SALIDA_AUDITORIA_JSON = REPORTS_DIR / "auditoria_pipeline.json"
 SALIDA_AUDITORIA_MD = REPORTS_DIR / "auditoria_pipeline.md"
 SALIDA_MAPA_DIAGNOSTICO = FIGURAS_DIR / "mapa_diagnostico_continental.png"

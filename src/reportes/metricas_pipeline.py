@@ -21,83 +21,101 @@ Objetivo en Python (Paso 5.5):
         en Markdown (`reports/auditoria_pipeline.md`) listo para incorporar en la tesis.
 
 En palabras simples:
-    Es el "acta de cierre contable" de todo el preprocesamiento. Demuestra con números
-    verificables cuántos registros entraron al sistema, por qué salió cada registro
-    excluido, cuántos rescató el algoritmo geoespacial y cuál es la efectividad final
-    del dataset que alimentará los modelos de series temporales (Fase 6).
+    Es el módulo de trazabilidad cuantitativa de todo el preprocesamiento. Verifica
+    mediante ecuaciones de conservación que ningún registro se haya perdido sin causa
+    documentada (todo registro inicial o bien llegó al dataset final, o bien quedó
+    contabilizado en una categoría explícita de exclusión) y deja evidencia persistente
+    en disco tanto para consumo programático (JSON) como para documentación académica (Markdown).
 """
-# `asdict` convierte un objeto `@dataclass` en un diccionario común de Python `{clave: valor}`,
-# ideal para guardarlo directamente como archivo JSON.
+# `dataclasses` es un módulo de la librería estándar de Python para definir clases orientadas
+# a almacenar datos estructurados sin escribir código repetitivo (boilerplate):
+#   • `dataclass`: decorador que autogenera `__init__`, `__repr__` y `__eq__`.
+#   • `field`: configura valores por defecto seguros para atributos mutables (`list`, `dict`).
+#   • `asdict`: convierte recursivamente un objeto `@dataclass` en un diccionario `dict` puro.
 from dataclasses import asdict, dataclass, field
 
-# `datetime` y `timezone` permiten registrar la fecha y hora exacta (UTC) en que se corrió la auditoría.
+# `datetime` representa instantes de fecha y hora; `timezone.utc` fija el huso horario universal
+# coordinado (UTC) para que la marca temporal de auditoría no dependa de la zona horaria local.
 from datetime import datetime, timezone
 
-# `json` es la librería estándar de Python para leer y escribir archivos `.json`.
+# `json` (JavaScript Object Notation) es la librería estándar para serializar diccionarios Python
+# hacia archivos `.json` estructurados e independientes del lenguaje.
 import json
 
-# `Path` maneja rutas de archivos de forma segura en cualquier sistema operativo.
+# `Path` encapsula rutas del sistema de archivos de forma multiplataforma.
 from pathlib import Path
 
 import pandas as pd
 
 from src.ingesta.config import (
-    INTERIM_FILTRADO,          # Salida Fase 3: homi_filtrado_2024.parquet (universo continental).
-    INTERIM_GEO_CORRECTOS,     # Salida Fase 4: geo_correctos.parquet (1ra auditoría espacial).
-    INTERIM_INSULAR_EXCLUIDO,  # Salida Fase 3: homi_insular_excluido.parquet (Galápagos).
-    INTERIM_RENOMBRADO,        # Salida Fase 1: homi_renombrado.parquet (universo bruto inicial).
+    INTERIM_FILTRADO,          # Salida Fase 3: `homi_filtrado_2024.parquet` (universo continental).
+    INTERIM_GEO_CORRECTOS,     # Salida Fase 4: `geo_correctos.parquet` (1ra auditoría espacial).
+    INTERIM_INSULAR_EXCLUIDO,  # Salida Fase 3: `homi_insular_excluido.parquet` (Galápagos).
+    INTERIM_RENOMBRADO,        # Salida Fase 1: `homi_renombrado.parquet` (universo bruto inicial).
     PROCESSED_GEORREFERENCIADO,
-    SALIDA_AUDITORIA_JSON,     # Salida 5.5 JSON: reports/auditoria_pipeline.json.
-    SALIDA_AUDITORIA_MD,       # Salida 5.5 Markdown: reports/auditoria_pipeline.md.
-    SALIDA_PARQUET_FINAL,      # Salida 5.3 Parquet: data/processed/homi_final.parquet.
+    SALIDA_AUDITORIA_JSON,     # Salida 5.5 JSON: `reports/auditoria_pipeline.json`.
+    SALIDA_AUDITORIA_MD,       # Salida 5.5 Markdown: `reports/auditoria_pipeline.md`.
+    SALIDA_PARQUET_FINAL,      # Salida 5.3 Parquet: `data/processed/homi_final.parquet`.
 )
 
 
 # =========================================================================
 # ESTRUCTURA DE DATOS DE LA AUDITORÍA INTEGRAL
 # =========================================================================
-# `@dataclass` genera automáticamente el constructor `__init__`, la representación
-# legible `__repr__` y la comparación `__eq__` a partir de los atributos declarados abajo.
+# ¿Qué hace exactamente el decorador `@dataclass` sobre `ResumenAuditoriaPipeline`?
+#   En Python clásico habría que escribir manualmente `def __init__(self, fecha_generacion_utc="", ...):`
+#   asignando `self.atributo = atributo` 25 veces seguidas. `@dataclass` inspecciona las anotaciones
+#   de tipo declaradas en la clase y genera automáticamente:
+#     1. `__init__`: constructor con argumentos por nombre y valores por defecto.
+#     2. `__repr__`: representación textual legible al depurar o imprimir el objeto.
+#     3. `__eq__`: comparación atributo por atributo al evaluar `resumen_a == resumen_b`.
 @dataclass
 class ResumenAuditoriaPipeline:
     """
     Contenedor tipado con todas las métricas del ciclo de vida del pipeline (Fases 1 a 5).
 
-    Se puede inspeccionar en código (ej. `resumen.efectividad_georreferenciacion_pct`)
-    o serializar directamente a JSON mediante `resumen.to_dict()`.
+    Permite acceso con autocompletado de tipos (ej. `resumen.efectividad_georreferenciacion_pct`)
+    y conversión directa a diccionario mediante su método `resumen.to_dict()`.
     """
 
     # ── 1. Metadatos de ejecución ──
-    fecha_generacion_utc: str = ""  # Marca temporal ISO-8601 en UTC de la corrida.
+    fecha_generacion_utc: str = ""  # Marca temporal ISO-8601 en UTC (ej. "2026-11-10T01:13:07Z").
 
     # ── 2. Conteos globales del ciclo de vida (Fases 1 → 3 → 5) ──
-    registros_brutos_iniciales: int = 0       # Total leído del CSV original (ej. 47,739).
-    registros_excluidos_temporal: int = 0     # Excluidos por año > 2024 o año NaN (ej. 9,171).
-    registros_excluidos_insular: int = 0      # Excluidos por pertenecer a Galápagos (ej. 2).
-    registros_universo_filtrado: int = 0      # Universo continental 2010-2024 (ej. 38,566).
-    registros_finales_etiquetados: int = 0    # Dataset definitivo exportado en Fase 5 (ej. 38,565).
+    registros_brutos_iniciales: int = 0       # Total leído del CSV original en Fase 1 (47,739).
+    registros_excluidos_temporal: int = 0     # Excluidos por `anio_hecho > 2024` o año nulo (9,171).
+    registros_excluidos_insular: int = 0      # Excluidos por pertenecer a Galápagos en Fase 3 (2).
+    registros_universo_filtrado: int = 0      # Universo continental válido 2010–2024 (38,566).
+    registros_finales_etiquetados: int = 0    # Dataset definitivo exportado en Fase 5 (38,565).
 
     # ── 3. Desglose de validación y rescate geoespacial (Fase 4) ──
-    geo_correctos_primera_auditoria: int = 0         # Caen dentro de su cantón al primer intento.
-    candidatos_fuera_poligono: int = 0               # Caen fuera del cantón en la 1ra auditoría.
-    limbo_formato_correcto_retenidos: int = 0        # Tienen punto decimal y coords válidas (retenidos).
-    candidatos_corruptos_sin_decimal: int = 0        # Sin punto decimal → enviados al reparador.
-    coordenadas_rescatadas_algoritmo: int = 0        # Recuperadas exitosamente por los 4 escenarios.
-    coordenadas_descartadas_irreversibles: int = 0   # Irrecuperables (ej. (0, 0) en el océano).
+    geo_correctos_primera_auditoria: int = 0         # Caen dentro de su cantón declarado al 1er `sjoin`.
+    candidatos_fuera_poligono: int = 0               # Caen fuera del cantón en la 1ra auditoría (`400`).
+    limbo_formato_correcto_retenidos: int = 0        # Conservan punto decimal y coords válidas (`399`).
+    candidatos_corruptos_sin_decimal: int = 0        # Sin punto decimal → evaluados por los 4 escenarios (`1`).
+    coordenadas_rescatadas_algoritmo: int = 0        # Reconstruidas y validadas espacialmente por `reparacion.py`.
+    coordenadas_descartadas_irreversibles: int = 0   # Irrecuperables en los 4 escenarios (ej. `(0, 0)`).
+
+    # ¿Por qué usamos `field(default_factory=dict)` en vez de escribir `= {}`?
+    #   En Python, los diccionarios y listas son objetos MUTABLES. Si pusiéramos `= {}` en la
+    #   definición de la clase, todas las instancias compartirían la misma referencia en memoria.
+    #   `default_factory=dict` le ordena a Python llamar a `dict()` cada vez que se instancia un
+    #   objeto nuevo, entregándole su propio diccionario independiente.
     detalle_rescate_por_escenario: dict[str, int] = field(default_factory=dict)
 
     # ── 4. Indicadores porcentuales de calidad y efectividad ──
-    tasa_retencion_post_filtro_pct: float = 0.0           # Universo filtrado / Brutos iniciales (%).
-    precision_topologica_inicial_pct: float = 0.0         # Geo correctos 1ra aud. / Universo (%).
-    tasa_rescate_sobre_corruptos_pct: float = 0.0         # Rescatados / Corruptos sin decimal (%).
-    efectividad_georreferenciacion_pct: float = 0.0       # Finales / Universo filtrado (%) [métrica R].
-    retencion_global_bruto_a_final_pct: float = 0.0       # Finales / Brutos iniciales (%).
-    integridad_contable_ok: bool = False                  # True si todas las sumas cuadran sin fugas.
+    tasa_retencion_post_filtro_pct: float = 0.0           # (Universo filtrado / Brutos iniciales) × 100.
+    precision_topologica_inicial_pct: float = 0.0         # (Geo correctos 1ra aud. / Universo) × 100.
+    tasa_rescate_sobre_corruptos_pct: float = 0.0         # (Rescatados / Corruptos sin decimal) × 100.
+    efectividad_georreferenciacion_pct: float = 0.0       # (Finales / Universo filtrado) × 100 [métrica R].
+    retencion_global_bruto_a_final_pct: float = 0.0       # (Finales / Brutos iniciales) × 100.
+    integridad_contable_ok: bool = False                  # `True` si las 3 ecuaciones de balance se cumplen.
 
     # ── 5. Perfil estructural del dataset final (Fase 5) ──
     columnas_finales: int = 0
     nombres_columnas: list[str] = field(default_factory=list)
     esquema_tipos: dict[str, str] = field(default_factory=dict)
+    # `int | None = None`: puede contener un entero (ej. `2010`) o `None` si la columna no existiera.
     anio_min: int | None = None
     anio_max: int | None = None
     fecha_min: str | None = None
@@ -105,9 +123,9 @@ class ResumenAuditoriaPipeline:
     provincias_unicas: int = 0
     cantones_unicos: int = 0
 
+    # Método de instancia (`self` referencia al propio objeto `ResumenAuditoriaPipeline` actual).
     def to_dict(self) -> dict:
-        """Convierte la instancia del reporte en un diccionario serializable a JSON."""
-        # `asdict(self)` transforma recursivamente todos los campos del dataclass en un `dict`.
+        """Convierte todos los atributos del reporte en un diccionario estándar serializable a JSON."""
         return asdict(self)
 
 
@@ -120,14 +138,17 @@ def _inferir_limbo_desde_artefactos(
 ) -> int | None:
     """
     Reconstruye cuántos registros del universo filtrado quedaron en `limbo_formato_correcto`
-    cuando el módulo se ejecuta de forma autónoma sin pasar conteos en memoria.
+    cuando este módulo se ejecuta de forma autónoma desde terminal sin recibir conteos en RAM.
 
-    Lógica:
-        En la Fase 4 (`geometrias.py`), a los registros con coordenadas numéricas válidas se
-        les asigna `ID_temp = 1..N`. Los que pasan la 1ra auditoría se guardan en
-        `geo_correctos.parquet` conservando su `ID_temp`. Los que NO están en `geo_correctos`
-        pero sí tienen punto decimal `.` en `latitud` conforman exactamente `limbo_formato_correcto`.
+    Fundamento técnico:
+        En `geometrias.py` (Paso 4.3), a los registros con coordenadas convertibles a número se
+        les asigna `ID_temp = 1..N`. Los que aprueban la 1ra auditoría se guardan en
+        `geo_correctos.parquet` conservando su `ID_temp`. Por diferencia de conjuntos, los `ID_temp`
+        ausentes en `geo_correctos` que SÍ contienen el carácter `.` en `latitud` corresponden
+        exactamente al subconjunto `limbo_formato_correcto`.
     """
+    # Si alguno de los dos archivos intermedios no está en disco, devolvemos `None` para que
+    # el llamador aplique una estimación de respaldo sin fallar.
     if not (ruta_filtrado.exists() and ruta_geo_correctos.exists()):
         return None
 
@@ -137,18 +158,27 @@ def _inferir_limbo_desde_artefactos(
     if "ID_temp" not in df_corr.columns or "latitud" not in df_filt.columns:
         return None
 
-    # Reproducimos el filtrado de coordenadas convertibles a número de `crear_geodataframe_puntos`.
+    # Reproducimos la validación numérica inicial de `crear_geodataframe_puntos`:
     lat_num = pd.to_numeric(df_filt["latitud"], errors="coerce")
     lon_num = pd.to_numeric(df_filt["longitud"], errors="coerce")
+    # `.loc[mascara]` filtra las filas donde TANTO latitud COMO longitud (`&` = AND vectorizado) no son NaN.
     df_validos = df_filt.loc[lat_num.notna() & lon_num.notna()].copy()
+    # `range(1, len(df_validos) + 1)` genera la secuencia entera `1, 2, ..., N` (en Python el límite superior es exclusivo).
     df_validos["ID_temp"] = range(1, len(df_validos) + 1)
 
-    # Filtramos los que NO aprobaron la primera auditoría espacial (`~` = negación).
+    # Convertimos los IDs correctos a un conjunto hash (`set`): buscar pertenencia en un `set`
+    # tiene complejidad temporal constante O(1), mucho más veloz que buscar en una lista O(n).
     ids_correctos = set(df_corr["ID_temp"].tolist())
+    # El operador virgulilla `~` invierte la máscara booleana (`NOT`): selecciona los que NO están en `ids_correctos`.
     fuera_poligono = df_validos[~df_validos["ID_temp"].isin(ids_correctos)]
 
-    # De esos, contamos cuántos sí tenían punto decimal literal `"."` (`regex=False`).
+    # Desglose de `.astype(str).str.contains(".", regex=False, na=False)`:
+    #   • `.astype(str)` asegura operar sobre texto.
+    #   • `.str.contains(".", regex=False, na=False)` busca el carácter punto literal `.`.
+    #     IMPORTANTE: `regex=False` es indispensable porque en expresiones regulares el `.` significa
+    #     "cualquier carácter", lo cual daría `True` para todos los textos si no se desactiva regex.
     tiene_punto = fuera_poligono["latitud"].astype(str).str.contains(".", regex=False, na=False)
+    # En Python/Pandas `True` vale `1` y `False` vale `0`, por lo que `.sum()` cuenta cuántos `True` hay.
     return int(tiene_punto.sum())
 
 
@@ -170,42 +200,40 @@ def calcular_metricas_pipeline(
     r"""
     Calcula todas las métricas de auditoría del ciclo de vida (Fases 1 a 5).
 
-    Puede invocarse de dos maneras complementarias:
-      1. **En memoria desde `main.py`**: recibiendo directamente los conteos exactos de
-         cada fase y el `df_final` recién estandarizado.
-      2. **De forma autónoma desde disco**: si algún conteo es `None`, lee automáticamente
-         los artefactos Parquet de `data/interim/` y `data/processed/`.
+    Diseño dual (en memoria o autónomo desde disco):
+      1. **Desde `main.py`**: recibe directamente `df_final` y los conteos exactos capturados en RAM.
+      2. **Desde terminal o notebooks (`calcular_metricas_pipeline()`)**: cualquier argumento dejado
+         en `None` se reconstruye automáticamente leyendo los archivos Parquet de `data/interim/` y `data/processed/`.
 
     Parameters
     ----------
     df_final : pd.DataFrame or None, optional
-        Dataset final de 21 columnas. Si es `None`, se carga de `SALIDA_PARQUET_FINAL`
-        (o `PROCESSED_GEORREFERENCIADO`).
+        Dataset final de 21 columnas. Si es `None`, se carga desde `SALIDA_PARQUET_FINAL`.
     n_brutos_iniciales : int or None, optional
-        Total de registros crudos al iniciar el pipeline (Fase 1).
+        Total de registros crudos cargados en la Fase 1.
     n_excluidos_temporal : int or None, optional
         Registros descartados por filtro temporal (`anio_hecho > 2024` o nulo).
     n_excluidos_insular : int or None, optional
         Registros insulares de Galápagos separados en la Fase 3.
     n_universo_filtrado : int or None, optional
-        Universo continental válido 2010–2024 que entra a la validación geoespacial.
+        Universo continental válido 2010–2024 que ingresa a la Fase 4.
     n_geo_correctos : int or None, optional
         Registros validados en la primera auditoría punto-en-polígono (Fase 4.4).
     n_rescatados_algoritmo : int or None, optional
         Coordenadas recuperadas por los 4 escenarios decimales (Fase 4.6).
     n_limbo_retenidos : int or None, optional
-        Registros con formato decimal válido retenidos pese a discrepancia cantonal (Fase 4.5).
+        Registros con formato decimal válido retenidos (Fase 4.5).
     n_descartados_irreversibles : int or None, optional
-        Registros corruptos irrecuperables excluidos del dataset final.
+        Registros irrecuperables excluidos del dataset final.
     detalle_escenarios : dict[str, int] or None, optional
-        Desglose opcional `{escenario_1..4: cantidad}` del algoritmo reparador.
+        Desglose `{nombre_escenario: conteo}` de los 4 escenarios de reparación.
 
     Returns
     -------
     ResumenAuditoriaPipeline
-        Objeto con conteos, tasas de rescate, efectividad e integridad contable.
+        Instancia poblada con conteos, porcentajes, verificación contable y esquema final.
     """
-    # ── 1. Cargar `df_final` desde disco si no fue pasado en memoria ──
+    # ── 1. Resolver el DataFrame final (`is None` verifica ausencia explícita del argumento) ──
     if df_final is None:
         if SALIDA_PARQUET_FINAL.exists():
             df_final = pd.read_parquet(SALIDA_PARQUET_FINAL)
@@ -238,7 +266,7 @@ def calcular_metricas_pipeline(
             n_excluidos_insular = 0
 
     if n_excluidos_temporal is None:
-        # Por conservación de masa en Fase 3: brutos = temporal + insular + universo_filtrado.
+        # `max(0, ...)` evita conteos negativos si en un test sintético se pasaran subconjuntos parciales.
         n_excluidos_temporal = max(
             0, n_brutos_iniciales - n_universo_filtrado - n_excluidos_insular
         )
@@ -250,13 +278,15 @@ def calcular_metricas_pipeline(
         else:
             n_geo_correctos = n_finales
 
-    # Puntos que no cayeron dentro de su cantón declarado en la primera pasada.
+    # Total de puntos que no intersectaron su cantón declarado en la primera pasada espacial.
     n_fuera_poligono = max(0, n_universo_filtrado - n_geo_correctos)
 
     if n_descartados_irreversibles is None:
         n_descartados_irreversibles = max(0, n_universo_filtrado - n_finales)
 
-    # Resolver `n_limbo_retenidos` y `n_rescatados_algoritmo` de forma consistente.
+    # Resolución algebraica entre `limbo` y `rescatados`:
+    # Sabemos que `n_finales == n_geo_correctos + n_limbo_retenidos + n_rescatados_algoritmo`.
+    # Si falta uno de los dos términos, se despeja del otro; si faltan ambos, se infiere desde Parquet.
     if n_limbo_retenidos is None and n_rescatados_algoritmo is None:
         inferido_limbo = _inferir_limbo_desde_artefactos(
             INTERIM_FILTRADO, INTERIM_GEO_CORRECTOS
@@ -278,11 +308,15 @@ def calcular_metricas_pipeline(
             0, (n_finales - n_geo_correctos) - n_limbo_retenidos
         )
 
-    # Candidatos sin punto decimal evaluados por el algoritmo reparador:
-    # son exactamente la suma de los que logró rescatar + los descartados irreversibles.
+    # Todo candidato sin punto decimal terminó en uno de dos destinos mutuamente excluyentes:
+    # o fue rescatado por alguno de los 4 escenarios, o fue descartado como irreversible.
     n_corruptos_sin_decimal = n_rescatados_algoritmo + n_descartados_irreversibles
 
-    # ── 4. Calcular tasas e indicadores porcentuales (evitando división para cero) ──
+    # ── 4. Cálculo seguro de tasas porcentuales ──
+    # Sintaxis de expresión condicional ternaria en Python:
+    #   `valor_si_verdadero if condicion else valor_si_falso`
+    # Protege contra `ZeroDivisionError` cuando un denominador vale `0` (por ejemplo, si hubiese
+    # `0` candidatos corruptos sin punto decimal). `round(valor, 4)` redondea a 4 decimales.
     tasa_retencion_filtro = (
         round((n_universo_filtrado / n_brutos_iniciales) * 100, 4)
         if n_brutos_iniciales > 0
@@ -298,7 +332,7 @@ def calcular_metricas_pipeline(
         if n_corruptos_sin_decimal > 0
         else 0.0
     )
-    # Métrica oficial de efectividad equivalente a la línea 518 del script R:
+    # Equivalente directo al indicador de efectividad de la Fase 11 de R (línea 518):
     # `(nrow(homi_Nueva) / nrow(homi_2010_2024)) * 100`
     efectividad_geo = (
         round((n_finales / n_universo_filtrado) * 100, 4)
@@ -311,34 +345,39 @@ def calcular_metricas_pipeline(
         else 0.0
     )
 
-    # ── 5. Verificación matemática de integridad contable de extremo a extremo ──
-    # Ecuación 1 (Fase 1 → 3): brutos == excluidos_temporal + excluidos_insular + universo_filtrado
-    cuadra_fase3 = (
+    # ── 5. Verificación matemática de integridad contable (3 invariantes del pipeline) ──
+    # Invariante 1 (Filtrado Fase 3): todo registro bruto se clasificó en temporal, insular o continental.
+    cuadra_filtrado = (
         n_excluidos_temporal + n_excluidos_insular + n_universo_filtrado
     ) == n_brutos_iniciales
 
-    # Ecuación 2 (Fase 4 → 5): universo_filtrado == correctos + rescatados + limbo + descartados
-    cuadra_fase4 = (
+    # Invariante 2 (Partición Fase 4): todo registro continental fue a correctos, rescatados, limbo o descartados.
+    cuadra_validacion_geo = (
         n_geo_correctos
         + n_rescatados_algoritmo
         + n_limbo_retenidos
         + n_descartados_irreversibles
     ) == n_universo_filtrado
 
-    # Ecuación 3 (Ensamble final): finales == correctos + rescatados + limbo
+    # Invariante 3 (Ensamble Fase 5): el dataset final es exactamente la unión disjunta de los tres grupos válidos.
     cuadra_ensamble = (
         n_geo_correctos + n_rescatados_algoritmo + n_limbo_retenidos
     ) == n_finales
 
-    integridad_ok = bool(cuadra_fase3 and cuadra_fase4 and cuadra_ensamble)
+    # Solo es `True` si las tres ecuaciones de balance se cumplen simultáneamente.
+    integridad_ok = bool(cuadra_filtrado and cuadra_validacion_geo and cuadra_ensamble)
 
-    # ── 6. Extraer perfil estructural y cobertura del dataset final ──
+    # ── 6. Perfil estructural y cobertura geográfica/temporal del dataset final ──
     nombres_cols = list(df_final.columns)
+    # Comprensión de diccionario que registra el nombre textual del `dtype` de cada columna
+    # (ej. `{"codigo_caso": "string", "fecha_hecho": "datetime64[ns]", "provincia": "category", ...}`).
     esquema_tipos = {col: str(dtype) for col, dtype in df_final.dtypes.items()}
 
     anio_min: int | None = None
     anio_max: int | None = None
     if "anio_hecho" in df_final.columns and df_final["anio_hecho"].notna().any():
+        # Convertimos el escalar de Pandas/NumPy a `int` nativo de Python para que `json.dump`
+        # pueda serializarlo (el serializador JSON estándar no acepta `np.int64` directamente).
         anio_min = int(df_final["anio_hecho"].min())
         anio_max = int(df_final["anio_hecho"].max())
 
@@ -347,9 +386,12 @@ def calcular_metricas_pipeline(
     if "fecha_hecho" in df_final.columns and df_final["fecha_hecho"].notna().any():
         fechas_dt = pd.to_datetime(df_final["fecha_hecho"], errors="coerce").dropna()
         if len(fechas_dt) > 0:
+            # `.strftime("%Y-%m-%d")` formatea un objeto `Timestamp` al estándar ISO `"2010-01-01"`.
             fecha_min = fechas_dt.min().strftime("%Y-%m-%d")
             fecha_max = fechas_dt.max().strftime("%Y-%m-%d")
 
+    # `.nunique(dropna=True)` cuenta cuántos valores distintos no nulos existen en la columna
+    # (equivale a `n_distinct(x, na.rm = TRUE)` de `dplyr` en R).
     n_provincias = (
         int(df_final["provincia"].nunique(dropna=True))
         if "provincia" in df_final.columns
@@ -361,8 +403,10 @@ def calcular_metricas_pipeline(
         else 0
     )
 
+    # Capturamos la hora exacta UTC en formato estándar ISO-8601 (`YYYY-MM-DDTHH:MM:SSZ`).
     marca_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    # `detalle_escenarios or {}`: si `detalle_escenarios` es `None`, sustituye por un diccionario vacío `{}`.
     return ResumenAuditoriaPipeline(
         fecha_generacion_utc=marca_utc,
         registros_brutos_iniciales=n_brutos_iniciales,
@@ -415,15 +459,20 @@ def exportar_reporte_json(
     Returns
     -------
     Path
-        Ruta absoluta del archivo JSON escrito.
+        Ruta del archivo JSON escrito.
     """
     ruta_salida = Path(ruta_salida)
     ruta_salida.parent.mkdir(parents=True, exist_ok=True)
 
-    # `with open(...) as f:` abre el archivo y garantiza cerrarlo automáticamente al salir
-    # del bloque, incluso si ocurriera un error intermedio (context manager de Python).
-    # `ensure_ascii=False` conserva tildes y eñes reales en vez de códigos `\u00f3`.
-    # `indent=2` formatea el JSON con sangría de 2 espacios para lectura humana.
+    # Bloque `with open(...) as archivo_json:` (administrador de contexto / Context Manager):
+    #   • `mode="w"` abre el archivo para escritura (sobrescribe si existía).
+    #   • `encoding="utf-8"` asegura codificación internacional uniforme.
+    #   • Al terminar el bloque indentado, Python invoca automáticamente `archivo_json.close()`,
+    #     liberando el descriptor del sistema operativo incluso si ocurriera una excepción.
+    # Parámetros de `json.dump(...)`:
+    #   • `resumen.to_dict()`: diccionario plano con todos los campos del dataclass.
+    #   • `ensure_ascii=False`: escribe caracteres acentuados reales en vez de secuencias `\u00f3`.
+    #   • `indent=2`: formatea el JSON con sangría legible de 2 espacios por nivel.
     with open(ruta_salida, mode="w", encoding="utf-8") as archivo_json:
         json.dump(resumen.to_dict(), archivo_json, ensure_ascii=False, indent=2)
 
@@ -436,7 +485,7 @@ def exportar_reporte_markdown(
     ruta_salida: Path = SALIDA_AUDITORIA_MD,
 ) -> Path:
     """
-    Exporta una ficha técnica en formato Markdown lista para anexar al documento de tesis.
+    Exporta un resumen ejecutivo en formato Markdown listo para anexar al documento de tesis.
 
     Parameters
     ----------
@@ -448,7 +497,7 @@ def exportar_reporte_markdown(
     Returns
     -------
     Path
-        Ruta absoluta del archivo Markdown escrito.
+        Ruta del archivo Markdown escrito.
     """
     ruta_salida = Path(ruta_salida)
     ruta_salida.parent.mkdir(parents=True, exist_ok=True)
@@ -460,6 +509,8 @@ def exportar_reporte_markdown(
         else f"{resumen.anio_min}–{resumen.anio_max}"
     )
 
+    # Construimos el documento línea por línea en una lista `list[str]`.
+    # En tablas GitHub-Flavored Markdown, `:---` alinea a la izquierda y `---:` alinea números a la derecha.
     lineas_md = [
         "# Auditoría Estadística Integral del Pipeline (Fases 1 a 5)",
         "",
@@ -492,6 +543,8 @@ def exportar_reporte_markdown(
         "",
     ]
 
+    # `"\n".join(lineas_md)` concatena todas las cadenas de la lista separándolas con saltos de línea `\n`,
+    # y `Path.write_text(..., encoding="utf-8")` abre, escribe y cierra el archivo en un solo paso.
     ruta_salida.write_text("\n".join(lineas_md), encoding="utf-8")
     print(f"        Reporte Markdown guardado: {ruta_salida}")
     return ruta_salida
@@ -501,6 +554,10 @@ def imprimir_resumen_pipeline(resumen: ResumenAuditoriaPipeline) -> None:
     """
     Muestra en consola el cuadro ejecutivo de control integral (equivalente a R Fases 11 y 13).
     """
+    # Especificadores de formato dentro de las f-strings `{valor:formato}`:
+    #   • `:<48`  → alinea el texto a la IZQUIERDA rellenando con espacios hasta 48 columnas.
+    #   • `:>14,` → alinea el entero a la DERECHA en 14 columnas con coma separadora de miles.
+    #   • `:.4f`  → muestra un número flotante con exactamente 4 cifras decimales.
     print("=" * 68)
     print("  AUDITORÍA ESTADÍSTICA INTEGRAL DEL PIPELINE (FASES 1 A 5)")
     print("=" * 68)
@@ -545,7 +602,8 @@ def generar_auditoria_pipeline(
     ruta_md: Path = SALIDA_AUDITORIA_MD,
 ) -> ResumenAuditoriaPipeline:
     """
-    Función fachada del Paso 5.5: calcula métricas, imprime el resumen y exporta JSON + Markdown.
+    Función fachada (Facade Pattern) del Paso 5.5:
+    coordina en una sola llamada el cálculo de métricas, la escritura de JSON + Markdown y el reporte en consola.
     """
     print("  [5.5] Generando reporte estadístico de control y efectividad del pipeline")
     resumen = calcular_metricas_pipeline(
@@ -570,4 +628,3 @@ def generar_auditoria_pipeline(
 #     python -m src.reportes.metricas_pipeline
 if __name__ == "__main__":
     generar_auditoria_pipeline()
-

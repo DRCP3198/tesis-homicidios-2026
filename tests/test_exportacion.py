@@ -11,17 +11,25 @@ Verifica de extremo a extremo la etapa final de empaquetado y entrega del pipeli
      y preservación de nombres largos de columna sin el truncamiento de 10 caracteres de `.shp`.
   5. `metricas_pipeline`: cuadre contable del ciclo de vida, tasa de rescate y reportes JSON/MD.
   6. `mapa_diagnostico`: disolución provincial y exportación PNG desatendida a 300 DPI.
+
+¿Cómo ejecuta `pytest` este archivo?
+    Al correr `pytest tests/`, el framework descubre automáticamente todo archivo cuyo nombre
+    empiece con `test_`, instancia cada clase que empiece con `Test` y ejecuta cada método
+    que empiece con `test_`, inyectándole los datos de prueba (`fixtures`) solicitados por parámetro.
 """
-# `json` permite leer el archivo `auditoria_pipeline.json` en los tests y verificar sus claves.
+# `json` permite deserializar `auditoria_pipeline.json` y comprobar su estructura interna.
 import json
 
-# `Path` maneja rutas temporales (`tmp_path` de pytest) y rutas reales del proyecto.
+# `Path` representa rutas de archivos temporales y definitivos de forma multiplataforma.
 from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
 import pytest
-from shapely.geometry import box  # `box(minx, miny, maxx, maxy)` crea polígonos rectangulares de prueba.
+
+# `shapely.geometry.box(minx, miny, maxx, maxy)` construye un polígono rectangular (`Polygon`)
+# a partir de sus coordenadas extremas; ideal para fabricar cantones sintéticos en memoria.
+from shapely.geometry import box
 
 from src.exportacion.exportador import (
     construir_geodataframe_final,
@@ -52,9 +60,13 @@ from src.visualizacion.mapa_diagnostico import (
 
 
 # =========================================================================
-# FIXTURES REUTILIZABLES (datos sintéticos representativos de la base georreferenciada)
+# FIXTURES REUTILIZABLES (datos sintéticos aislados por prueba)
 # =========================================================================
-# `@pytest.fixture` crea funciones proveedoras de datos limpios y aislados para cada test.
+# ¿Qué hace el decorador `@pytest.fixture`?
+#   Registra una función como "proveedora de recursos de prueba". Cada vez que un método
+#   `def test_algo(self, df_georreferenciado_simulado):` declara ese mismo nombre en sus
+#   parámetros, `pytest` ejecuta esta función y le entrega un DataFrame nuevo y limpio,
+#   garantizando que una prueba jamás contamine los datos de otra prueba.
 @pytest.fixture
 def df_georreferenciado_simulado() -> pd.DataFrame:
     """
@@ -86,16 +98,16 @@ def df_georreferenciado_simulado() -> pd.DataFrame:
                 "VIOLENCIA INTRAFAMILIAR",
             ],
             "causa_especifica": ["TRAFICO", "RINAS", "SICARIATO", "MALTRATO"],
-            # Incluye edad entera ("34"), lactante decimal ("0.25") y desconocido (None).
+            # Incluye edad entera ("34"), lactante decimal ("0.25") y desconocido (`None` -> `NaN`).
             "edad_victima": ["34", "0.25", None, "29"],
             "sexo_victima": ["HOMBRE", "MUJER", "HOMBRE", "MUJER"],
             "nacionalidad_victima": ["ECUATORIANA", "ECUATORIANA", "COLOMBIANA", "ECUATORIANA"],
-            # Coordenadas crudas en texto (la 1ra fila simula coordenada sin punto decimal):
+            # Coordenadas crudas en texto (la fila 0 simula coordenada corrupta sin punto decimal):
             "latitud": ["-2189400", "-0.1807", "-2.1701", "-2.9001"],
             "longitud": ["-79.8891", "-78.4678", "-79.8220", "-79.0059"],
             "AUX_HORA_SISTEMA": ["19", "8", "23", "0"],
             "AUX_MINUTO_SISTEMA": ["30", "0", "15", "30"],
-            # Coordenadas numéricas ya validadas/reparadas:
+            # Coordenadas numéricas ya validadas/reparadas en la Fase 4:
             "lat_num": [-2.1894, -0.1807, -2.1701, -2.9001],
             "lon_num": [-79.8891, -78.4678, -79.8220, -79.0059],
             # Columna auxiliar interna de auditoría que NO debe pasar al entregable final:
@@ -107,8 +119,8 @@ def df_georreferenciado_simulado() -> pd.DataFrame:
 @pytest.fixture
 def mapa_sintetico_continental() -> gpd.GeoDataFrame:
     """
-    Crea un pequeño mapa vectorial en EPSG:4326 con 3 cantones en 2 provincias
-    para probar la disolución provincial y el mapa diagnóstico en milisegundos.
+    Crea un pequeño mapa vectorial en `EPSG:4326` con 3 cantones distribuidos en 2 provincias
+    para probar la disolución topológica (`dissolve`) y el renderizado del mapa en milisegundos.
     """
     return gpd.GeoDataFrame(
         {
@@ -116,9 +128,9 @@ def mapa_sintetico_continental() -> gpd.GeoDataFrame:
             "DPA_DESCAN": ["GUAYAQUIL", "DURAN", "QUITO"],
         },
         geometry=[
-            box(-80.2, -2.5, -79.85, -2.0),  # Cantón Guayaquil simulado
-            box(-79.85, -2.5, -79.6, -2.0),  # Cantón Durán adyacente (misma provincia GUAYAS)
-            box(-78.7, -0.5, -78.2, 0.1),    # Cantón Quito (provincia PICHINCHA)
+            box(-80.2, -2.5, -79.85, -2.0),  # Polígono rectangular 1 (Guayaquil simulado)
+            box(-79.85, -2.5, -79.6, -2.0),  # Polígono rectangular 2 contiguo (Durán simulado)
+            box(-78.7, -0.5, -78.2, 0.1),    # Polígono rectangular 3 (Quito simulado)
         ],
         crs="EPSG:4326",
     )
@@ -128,7 +140,7 @@ def mapa_sintetico_continental() -> gpd.GeoDataFrame:
 # 1. TESTS DE SELECCIÓN, HOMOLOGACIÓN Y TIPADO DE LAS 21 COLUMNAS
 # =========================================================================
 class TestSeleccionYEstandarizacion:
-    """Pruebas unitarias para `seleccionar_y_estandarizar_columnas`."""
+    """Pruebas unitarias para `seleccionar_y_estandarizar_columnas` (Paso 5.1)."""
 
     def test_selecciona_exactamente_21_columnas_en_orden(
         self, df_georreferenciado_simulado: pd.DataFrame
@@ -136,6 +148,8 @@ class TestSeleccionYEstandarizacion:
         """El resultado debe tener exactamente las 21 columnas oficiales y descartar `ID_temp`."""
         df_limpio = seleccionar_y_estandarizar_columnas(df_georreferenciado_simulado)
 
+        # `assert condicion`: si la condición es `False`, pytest marca el test como FAILED y muestra
+        # las diferencias exactas entre ambas listas.
         assert list(df_limpio.columns) == COLUMNAS_FINALES_21
         assert len(df_limpio.columns) == 21
         assert "ID_temp" not in df_limpio.columns
@@ -148,26 +162,30 @@ class TestSeleccionYEstandarizacion:
         """La fila 0 tenía `latitud='-2189400'` cruda y `lat_num=-2.1894` reparada; debe quedar `-2.1894`."""
         df_limpio = seleccionar_y_estandarizar_columnas(df_georreferenciado_simulado)
 
+        # ¿Por qué usamos `pytest.approx(-2.1894)` en lugar de `== -2.1894` directo?
+        #   En aritmética binaria de punto flotante (IEEE 754), números decimales pueden presentar
+        #   diferencias infinitesimales en el dígito 16 (ej. `-2.1894000000000002`). `pytest.approx`
+        #   compara con tolerancia relativa segura (`1e-6`).
         assert df_limpio.loc[0, "latitud"] == pytest.approx(-2.1894)
         assert df_limpio.loc[0, "longitud"] == pytest.approx(-79.8891)
 
     def test_conversion_estricta_de_tipos_de_datos(
         self, df_georreferenciado_simulado: pd.DataFrame
     ) -> None:
-        """Verifica el tipo exacto asignado a cada familia de variables del diccionario."""
+        """Verifica el `dtype` técnico exacto asignado a cada familia de variables del diccionario."""
         df_limpio = seleccionar_y_estandarizar_columnas(df_georreferenciado_simulado)
 
-        # Identificador policial como `string`
+        # 1. Identificador policial como `string`
         assert str(df_limpio["codigo_caso"].dtype) == "string"
 
-        # Fecha como `datetime64`
+        # 2. Fecha como `datetime64` (`is_datetime64_any_dtype` acepta `[ns]`, `[ms]` o `[us]`)
         assert pd.api.types.is_datetime64_any_dtype(df_limpio["fecha_hecho"])
 
-        # Enteros nulables `Int64`
+        # 3. Enteros nulables `Int64`
         for col_int in ("anio_hecho", "AUX_HORA_SISTEMA", "AUX_MINUTO_SISTEMA"):
             assert str(df_limpio[col_int].dtype) == "Int64"
 
-        # Decimales `float64` (preservando decimales de lactantes y horas fraccionarias)
+        # 4. Flotantes `float64` (preservando horas decimales, lactantes y `NaN`)
         for col_flt in ("hora_aproximada", "edad_victima", "latitud", "longitud"):
             assert str(df_limpio[col_flt].dtype) == "float64"
 
@@ -175,7 +193,7 @@ class TestSeleccionYEstandarizacion:
         assert df_limpio.loc[1, "edad_victima"] == pytest.approx(0.25)
         assert pd.isna(df_limpio.loc[2, "edad_victima"])
 
-        # Las 12 columnas nominales como `category`
+        # 5. Las 12 columnas nominales como instancias de `pd.CategoricalDtype`
         for col_cat in COLUMNAS_CATEGORICAS_FINALES:
             assert isinstance(df_limpio[col_cat].dtype, pd.CategoricalDtype)
 
@@ -183,6 +201,9 @@ class TestSeleccionYEstandarizacion:
         self, df_georreferenciado_simulado: pd.DataFrame
     ) -> None:
         """Debe lanzar `ValueError` si entra vacío y `KeyError` si falta una columna obligatoria."""
+        # `with pytest.raises(TipoExcepcion, match="patron"):` comprueba que el código dentro del
+        # bloque efectivamente lance esa excepción y que el mensaje contenga el texto esperado.
+        # `.iloc[0:0]` recorta el DataFrame conservando las columnas pero con 0 filas.
         with pytest.raises(ValueError, match="vacío"):
             seleccionar_y_estandarizar_columnas(df_georreferenciado_simulado.iloc[0:0])
 
@@ -194,8 +215,12 @@ class TestSeleccionYEstandarizacion:
 # =========================================================================
 # 2. TESTS DE EXPORTACIÓN CSV, PARQUET Y GEOPACKAGE
 # =========================================================================
+# Nota sobre el parámetro `tmp_path: Path` en los métodos siguientes:
+#   `tmp_path` es un fixture nativo integrado en `pytest`. Crea automáticamente una carpeta
+#   temporal única en el sistema operativo para cada test y la limpia después, de modo que
+#   probamos lectura/escritura real en disco sin tocar jamás la carpeta `data/processed/`.
 class TestExportadoresFormatos:
-    """Pruebas de escritura y lectura de ida y vuelta (roundtrip) usando `tmp_path`."""
+    """Pruebas de escritura y lectura de ida y vuelta (*roundtrip*) usando `tmp_path`."""
 
     def test_exportar_csv_utf8_sin_indice(
         self, df_georreferenciado_simulado: pd.DataFrame, tmp_path: Path
@@ -232,11 +257,12 @@ class TestExportadoresFormatos:
     ) -> None:
         """
         Verifica que GeoPackage (`.gpkg`) preserve `EPSG:4326`, el orden `Point(lon, lat)`
-        y nombres largos (>10 letras) como `motivacion_detalle` y `nacionalidad_victima`.
+        y nombres largos (>10 caracteres) como `motivacion_detalle` y `nacionalidad_victima`.
         """
         df_limpio = seleccionar_y_estandarizar_columnas(df_georreferenciado_simulado)
         gdf_mem = construir_geodataframe_final(df_limpio)
         assert gdf_mem.crs.to_epsg() == 4326
+        # Comprobamos que X sea longitud (-79.8891) e Y sea latitud (-2.1894), no al revés.
         assert gdf_mem.geometry.iloc[0].x == pytest.approx(-79.8891)
         assert gdf_mem.geometry.iloc[0].y == pytest.approx(-2.1894)
 
@@ -247,7 +273,7 @@ class TestExportadoresFormatos:
         gdf_leido = gpd.read_file(ruta_gpkg)
         assert gdf_leido.crs.to_epsg() == 4326
         assert len(gdf_leido) == 4
-        # Columnas de más de 10 caracteres que un `.shp` habría truncado:
+        # Columnas de más de 10 caracteres que un Shapefile `.shp` habría truncado en `.dbf`:
         assert "motivacion_detalle" in gdf_leido.columns
         assert "nacionalidad_victima" in gdf_leido.columns
         assert "AUX_MINUTO_SISTEMA" in gdf_leido.columns
@@ -255,7 +281,7 @@ class TestExportadoresFormatos:
     def test_exportar_todos_formatos_orquesta_los_tres_archivos(
         self, df_georreferenciado_simulado: pd.DataFrame, tmp_path: Path
     ) -> None:
-        """`exportar_todos_formatos` debe escribir y devolver las rutas de CSV, Parquet y GPKG."""
+        """`exportar_todos_formatos` debe escribir y devolver las rutas no vacías de CSV, Parquet y GPKG."""
         df_limpio = seleccionar_y_estandarizar_columnas(df_georreferenciado_simulado)
         rutas = exportar_todos_formatos(
             df_limpio,
@@ -272,7 +298,7 @@ class TestExportadoresFormatos:
 # 3. TESTS DE AUDITORÍA ESTADÍSTICA DEL CICLO DE VIDA
 # =========================================================================
 class TestMetricasPipeline:
-    """Pruebas unitarias para el motor de métricas y exportación JSON/Markdown."""
+    """Pruebas unitarias para el motor de métricas y exportación JSON/Markdown (Paso 5.5)."""
 
     def test_calculo_cuadre_contable_y_tasas_de_rescate(
         self, df_georreferenciado_simulado: pd.DataFrame, tmp_path: Path
@@ -280,8 +306,11 @@ class TestMetricasPipeline:
         """Valida las ecuaciones de conservación, tasa de rescate y serialización JSON/MD."""
         df_limpio = seleccionar_y_estandarizar_columnas(df_georreferenciado_simulado)
 
-        # Escenario sintético: 10 brutos → 5 excluidos año + 0 insular = 5 universo;
-        # de esos 5: 2 correctos 1ra aud + 1 rescatado + 1 limbo + 1 descartado = 4 finales.
+        # Escenario controlado con rescate > 0 para probar la fórmula porcentual:
+        #   • 10 brutos → 5 excluidos año + 0 insular = 5 en universo continental.
+        #   • De esos 5: 2 correctos 1ra aud + 1 rescatado + 1 limbo + 1 descartado = 4 finales.
+        #   • Corruptos sin decimal = 1 rescatado + 1 descartado = 2 → tasa de rescate = 50.0%.
+        #   • Efectividad georreferenciada = 4 finales / 5 universo = 80.0%.
         resumen = calcular_metricas_pipeline(
             df_final=df_limpio,
             n_brutos_iniciales=10,
@@ -295,12 +324,12 @@ class TestMetricasPipeline:
         )
 
         assert resumen.integridad_contable_ok is True
-        assert resumen.candidatos_corruptos_sin_decimal == 2  # 1 rescatado + 1 descartado
+        assert resumen.candidatos_corruptos_sin_decimal == 2
         assert resumen.tasa_rescate_sobre_corruptos_pct == pytest.approx(50.0)
-        assert resumen.efectividad_georreferenciacion_pct == pytest.approx(80.0)  # 4 de 5
+        assert resumen.efectividad_georreferenciacion_pct == pytest.approx(80.0)
         assert resumen.columnas_finales == 21
 
-        # Verificar persistencia JSON y Markdown
+        # Verificar persistencia y lectura en JSON y Markdown
         ruta_json = exportar_reporte_json(resumen, ruta_salida=tmp_path / "auditoria.json")
         ruta_md = exportar_reporte_markdown(resumen, ruta_salida=tmp_path / "auditoria.md")
 
@@ -314,12 +343,12 @@ class TestMetricasPipeline:
 # 4. TESTS DEL MAPA DIAGNÓSTICO DE VALIDACIÓN
 # =========================================================================
 class TestMapaDiagnostico:
-    """Pruebas unitarias para la generación desatendida del mapa en Matplotlib + GeoPandas."""
+    """Pruebas unitarias para la generación desatendida del mapa en Matplotlib + GeoPandas (Paso 5.6)."""
 
     def test_disolver_limites_provinciales_unifica_cantones(
         self, mapa_sintetico_continental: gpd.GeoDataFrame
     ) -> None:
-        """Dos cantones de GUAYAS y uno de PICHINCHA deben disolverse en 2 provincias."""
+        """Dos cantones de GUAYAS y uno de PICHINCHA deben disolverse en 2 polígonos provinciales."""
         provincias = disolver_limites_provinciales(mapa_sintetico_continental)
         assert len(provincias) == 2
         assert set(provincias["DPA_DESPRO"]) == {"GUAYAS", "PICHINCHA"}
@@ -330,7 +359,7 @@ class TestMapaDiagnostico:
         mapa_sintetico_continental: gpd.GeoDataFrame,
         tmp_path: Path,
     ) -> None:
-        """Genera un archivo PNG real (cabecera binaria PNG) sin alterar las coordenadas originales."""
+        """Genera un archivo PNG válido verificando su firma binaria sin alterar el DataFrame original."""
         df_limpio = seleccionar_y_estandarizar_columnas(df_georreferenciado_simulado)
         lat_original = df_limpio["latitud"].copy()
         ruta_png = tmp_path / "figuras" / "mapa_test.png"
@@ -343,24 +372,28 @@ class TestMapaDiagnostico:
         )
 
         assert salida.exists()
-        # Los primeros 8 bytes de todo archivo PNG estándar son `\x89PNG\r\n\x1a\n`.
+        # Verificación de firma binaria (*magic bytes*): según la especificación ISO/IEC 15948,
+        # los primeros 8 bytes de todo archivo PNG válido son siempre `\x89PNG\r\n\x1a\n`.
         assert salida.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
-        # El micro-jitter visual jamás debe modificar el DataFrame de entrada.
+        # Comprobación estricta de que el micro-jitter visual no mutó los datos de entrada:
         pd.testing.assert_series_equal(df_limpio["latitud"], lat_original)
 
 
 # =========================================================================
 # 5. TESTS DE INTEGRACIÓN SOBRE ENTREGABLES REALES DEL PIPELINE
 # =========================================================================
+# `@pytest.mark.skipif(condicion, reason=...)` omite elegantemente esta clase si alguien clona
+# el repositorio limpio y corre `pytest` antes de haber ejecutado `python main.py`.
+# Como aquí `homi_final.parquet` ya existe en `data/processed/`, la prueba SÍ se ejecuta.
 @pytest.mark.skipif(
     not SALIDA_PARQUET_FINAL.exists(),
     reason="Entregables finales aún no generados por `main.py`.",
 )
 class TestIntegracionEntregablesReales:
-    """Verifica la coherencia de los archivos reales en `data/processed/` y `reports/`."""
+    """Verifica la coherencia de los archivos reales generados en `data/processed/` y `reports/`."""
 
     def test_entregables_finales_existen_y_coinciden_en_conteo(self) -> None:
-        """CSV, Parquet, GeoPackage, JSON y PNG deben existir y coincidir en 38,565 registros."""
+        """CSV, Parquet, GeoPackage, JSON y PNG deben existir y coincidir exactamente en 38,565 registros."""
         assert SALIDA_CSV_FINAL.exists()
         assert SALIDA_PARQUET_FINAL.exists()
         assert SALIDA_GPKG_FINAL.exists()
@@ -375,4 +408,3 @@ class TestIntegracionEntregablesReales:
         assert auditoria["integridad_contable_ok"] is True
         assert auditoria["registros_finales_etiquetados"] == len(df_pq)
         assert auditoria["columnas_finales"] == 21
-
