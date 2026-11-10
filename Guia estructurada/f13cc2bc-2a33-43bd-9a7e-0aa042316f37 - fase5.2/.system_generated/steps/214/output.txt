@@ -1,0 +1,61 @@
+Command exited with code 0.
+
+Command output:
+
+
+    Directory: D:\Tesis\docs
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+-a----        2026-11-04  11:16 AM           2395 diccionario_datos.md                                                 
+
+Name : .git
+
+
+Name : .pytest_cache
+
+
+Name : .venv
+
+
+Name : .vscode
+
+
+Name : data
+
+
+Name : Datos
+
+
+Name : docs
+
+
+Name : Guia estructurada
+
+
+Name : notebooks
+
+
+Name : R_legacy
+
+
+Name : src
+
+
+Name : tests
+
+
+Name : .gitignore
+
+
+Name : main.py
+
+
+Name : README.md
+
+
+Name : requirements.txt
+
+
+

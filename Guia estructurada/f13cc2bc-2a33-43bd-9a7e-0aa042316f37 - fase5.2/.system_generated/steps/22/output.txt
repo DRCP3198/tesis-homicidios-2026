@@ -1,0 +1,10 @@
+Command exited with code 0.
+
+Command output:
+
+Name                      Length
+----                      ------
+homi_normalizado.parquet 1501473
+homi_renombrado.parquet  1503450
+
+

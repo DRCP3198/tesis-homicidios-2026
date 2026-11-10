@@ -1,0 +1,31 @@
+Command exited with code 0.
+
+Command output:
+  act/comentarios_readme
+  develop
+  docs/fase2_comentarios
+  docs/fase4_actualizado
+  docs/fase4_borrador
+  docs/fase4_extras1
+  fase2.1
+  feat/fase3
+  feat/fase4
+* feat/fase5_1.0
+  feature/fase3
+  main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/act/comentarios_main_config
+  remotes/origin/act/comentarios_readme
+  remotes/origin/develop
+  remotes/origin/docs/fase2_comentarios
+  remotes/origin/docs/fase4_actualizado
+  remotes/origin/docs/fase4_borrador
+  remotes/origin/docs/fase4_extras1
+  remotes/origin/fase2
+  remotes/origin/fase2.1
+  remotes/origin/feat/fase4
+  remotes/origin/feat/fase5_1.0
+  remotes/origin/feature/fase3
+  remotes/origin/main
+origin	https://github.com/DRCP3198/tesis-homicidios-2026.git (fetch)
+origin	https://github.com/DRCP3198/tesis-homicidios-2026.git (push)

@@ -1,0 +1,72 @@
+Command exited with code 0.
+
+Command output:
+============================================================
+  FASE 4.1–4.2: CARGA Y HOMOLOGACIÓN CARTOGRÁFICA
+============================================================
+  Leyendo shapefile: D:\Tesis\data\raw\cartografia\nxcantones.shp
+  Polígonos cargados: 224
+  CRS original: EPSG:32717
+  Columnas: ['DPA_VALOR', 'DPA_ANIO', 'DPA_CANTON', 'DPA_DESCAN', 'DPA_PROVIN', 'DPA_DESPRO', 'geometry']
+  CRS reproyectado: EPSG:4326
+  Geometrías reparadas: 1 (antes) → 0 (despues)
+  Cantones en mapa (total): 222
+  Excluidos (Galápagos + Zona No Delim.): 6
+  Cantones continental final: 216
+============================================================
+  [4.3] Creación de puntos geoespaciales
+        Registros entrada: 38,566
+        NaN en latitud:  0
+        NaN en longitud: 0
+        Registros con coordenadas válidas: 38,566
+        GeoDataFrame creado: 38,566 puntos en EPSG:4326
+  [4.4] Auditoría topológica: punto-en-polígono (sjoin vectorizado)
+        Total puntos evaluados: 38,566
+        Correctos (dentro de su cantón): 38,166 (98.96%)
+        A corregir (fuera de su cantón): 400 (1.04%)
+  [4.5] Separación por formato de coordenadas
+        Con punto decimal (limbo): 399
+        Sin punto decimal (reparar): 1
+Caen dentro de ALGUN canton continental del mapa?: 264 de 399
+Caen en ZONA NO DELIMITADA o fuera del shapefile?: 135
+
+--- Desglose completo de los 399 casos del Limbo (Canton Declarado CSV vs Canton donde cae el GPS en el Mapa) ---
+      provincia                       canton      DPA_DESPRO                          CANTON_MAPA  casos
+       LOS RIOS                 PUEBLO VIEJO        LOS RIOS                          PUEBLOVIEJO     94
+      PICHINCHA                    RUMINAHUI       PICHINCHA                            RUMIDAHUI     64
+       ORELLANA PUERTO FRANCISCO DE ORELLANA        ORELLANA                             ORELLANA     61
+          CANAR                  EL PIEDRERO    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]     51
+         MANABI                    EL CARMEN    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]     24
+          CANAR                   LA TRONCAL    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]     17
+         MANABI               MANGA DEL CURA    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]     14
+         EL ORO                      MACHALA    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]     13
+       IMBABURA                       IBARRA    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]      9
+         GUAYAS                       GUAYAS          GUAYAS                            GUAYAQUIL      8
+MORONA SANTIAGO                      LOGRONO MORONA SANTIAGO                              LOGRODO      7
+         EL ORO                   HUAQUILLAS          EL ORO                            ARENILLAS      6
+       ORELLANA                     ORELLANA        ORELLANA                LA JOYA DE LOS SACHAS      4
+       COTOPAXI        SAN MIGUEL DE SALCEDO        COTOPAXI                              SALCEDO      3
+         GUAYAS                    GUAYAQUIL    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]      3
+         CARCHI                       TULCAN          CARCHI                   SAN PEDRO DE HUACA      3
+      PICHINCHA                    PICHINCHA       PICHINCHA                                QUITO      2
+         MANABI                       MANABI          MANABI                                MANTA      2
+         GUAYAS                       GUAYAS          GUAYAS                                DURAN      2
+         EL ORO                       EL ORO          EL ORO                             EL GUABO      1
+        BOLIVAR        SAN MIGUEL DE SALCEDO         BOLIVAR                           SAN MIGUEL      1
+         EL ORO                       EL ORO          EL ORO                               PASAJE      1
+     ESMERALDAS                   ESMERALDAS    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]      1
+         GUAYAS     ALFREDO BAQUERIZO MORENO          GUAYAS              SAN JACINTO DE YAGUACHI      1
+         GUAYAS                       BALZAR        LOS RIOS                              MOCACHE      1
+         EL ORO                       EL ORO          EL ORO                           SANTA ROSA      1
+         GUAYAS                       GUAYAS          GUAYAS                             NARANJAL      1
+       IMBABURA              LAS GOLONDRINAS    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]      1
+         GUAYAS                  SAMBORONDON    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]      1
+         MANABI                   PORTOVIEJO    [FUERA CAPA] [ZONA NO DELIMITADA / BORDE COSTERA]      1
+     TUNGURAHUA                      TISALEO      TUNGURAHUA                                MOCHA      1
+
+--- Verificacion en toda la base 2010-2025 (47,739 filas): cuantas filas NO tienen punto decimal en latitud? ---
+Total sin punto decimal en 2010-2025: 3
+codigo_caso anio_hecho                      provincia         canton latitud   longitud
+      96547       2024                         MANABI MANGA DEL CURA       0          0
+      64081       2021 SANTO DOMINGO DE LOS TSACHILAS   LA CONCORDIA  -4e-06 -79.388594
+      86636       2023 SANTO DOMINGO DE LOS TSACHILAS   LA CONCORDIA  -4e-04   -79.3854

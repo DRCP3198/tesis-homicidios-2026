@@ -320,3 +320,21 @@ class TestHomologacionCantonesPorProvincia:
             "ORELLANA",
             "RUMINAHUI",
         ]
+
+    def test_homologa_zonas_no_delimitadas_opcion_a(self):
+        """
+        Verifica la incorporación legal (Opción A) de las antiguas Zonas No Delimitadas:
+        - ('MANABI', 'MANGA DEL CURA') -> 'EL CARMEN' (Ley R.O.S. 994, 2017)
+        - ('IMBABURA', 'LAS GOLONDRINAS') -> 'COTACACHI' (Ley R.O.S. 999, 2017)
+        - ('CANAR', 'EL PIEDRERO') -> 'LA TRONCAL' (SENPLADES Distrito 03D03)
+        """
+        df = pd.DataFrame({
+            "provincia": ["MANABI", "IMBABURA", "CANAR"],
+            "canton": ["MANGA DEL CURA", "LAS GOLONDRINAS", "EL PIEDRERO"],
+        })
+        resultado = homologar_cantones_por_provincia(df.copy())
+        assert resultado["canton"].tolist() == [
+            "EL CARMEN",
+            "COTACACHI",
+            "LA TRONCAL",
+        ]

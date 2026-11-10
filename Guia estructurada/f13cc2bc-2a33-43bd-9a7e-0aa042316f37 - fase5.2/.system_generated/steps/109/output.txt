@@ -1,0 +1,12 @@
+Command exited with code 0.
+
+Command output:
+
+LineNumber Line                                                           
+---------- ----                                                           
+       221             filter(grepl("\\\\.", as.character(lat.new)))      
+       223             filter(!grepl("\\\\.", as.character(lat.new)))     
+       226         grepl("\\\\.", x)  →  x.str.contains(r'\.', regex=True)
+       248     # Equivale a: grepl("\\.", as.character(lat.new))          
+
+

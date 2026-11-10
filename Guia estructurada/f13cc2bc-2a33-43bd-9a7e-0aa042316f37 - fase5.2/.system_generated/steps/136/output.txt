@@ -1,0 +1,111 @@
+Command exited with code 0.
+
+Command output:
+============================================================
+  FASE 1: INGESTA Y RENOMBRADO DE DATOS
+============================================================
+  Leyendo: D:\Tesis\data\raw\base_homi_2010_2025.csv
+  Registros cargados: 47,739
+  Columnas originales (21): ['X2', 'X4', 'X21', 'X22', 'X23', 'X28', 'X33', 'X35', 'X39', 'X40', 'X45', 'X47', 'X53', 'X133', 'X208', 'X209', 'anio', 'mes', 'dia', 'rangoh', 'DPA_DESPRO']
+  Columnas renombradas (21): ['codigo_caso', 'tipo_delito', 'fecha_hecho', 'anio_hecho', 'mes_hecho', 'dia_semana', 'hora_aproximada', 'provincia', 'canton', 'zona_tipo', 'lugar_especifico', 'tipo_arma', 'motivacion_detalle', 'causa_especifica', 'edad_victima', 'sexo_victima', 'nacionalidad_victima', 'latitud', 'longitud', 'AUX_HORA_SISTEMA', 'AUX_MINUTO_SISTEMA']
+  Primeras 3 filas:
+codigo_caso tipo_delito fecha_hecho anio_hecho mes_hecho dia_semana hora_aproximada provincia canton zona_tipo lugar_especifico tipo_arma    motivacion_detalle causa_especifica edad_victima sexo_victima nacionalidad_victima   latitud   longitud AUX_HORA_SISTEMA AUX_MINUTO_SISTEMA
+HM1001 0014   Homicidio  2010-01-01       2010     enero    viernes              20     AZUAY CUENCA    Urbano      Via Pública    Blanca                  Otro             Otro           42       Hombre          Ecuatoriana  -2.88278 -79.025539               20                  0
+HM1001 0113   Homicidio  2010-01-13       2010     enero  miércoles               9     AZUAY CUENCA    Urbano      Via Pública     Otras Violencia Comunitaria            Riñas           51       Hombre          Ecuatoriana -2.901871 -79.032907                9                  0
+HM1001 0212   Homicidio  2010-01-29       2010     enero    viernes              21     AZUAY CUENCA    Urbano             Otro    Blanca                  Otro             Otro           54       Hombre          Ecuatoriana -2.898014 -78.976785               21                  0
+============================================================
+  Guardado intermedio: D:\Tesis\data\interim\homi_renombrado.parquet
+  Tamaño: 1468.2 KB
+============================================================
+  FASE 2: LIMPIEZA Y NORMALIZACIÓN TEXTUAL
+============================================================
+  [OK] codigo_caso               | Antes: ['HM1001 0014', 'HM1001 0113', 'HM1001 0212']
+                                 | Después: ['HM1001 0014', 'HM1001 0113', 'HM1001 0212']
+  [OK] tipo_delito               | Antes: ['Homicidio', 'Asesinato', 'Sicariato']
+                                 | Después: ['HOMICIDIO', 'ASESINATO', 'SICARIATO']
+  [OK] zona_tipo                 | Antes: ['Urbano', 'Rural', 'SD']
+                                 | Después: ['URBANO', 'RURAL', 'SD']
+  [OK] lugar_especifico          | Antes: ['Via Pública', 'Otro', 'Hogar']
+                                 | Después: ['VIA PUBLICA', 'OTRO', 'HOGAR']
+  [OK] tipo_arma                 | Antes: ['Blanca', 'Otras', 'Fuego']
+                                 | Después: ['BLANCA', 'OTRAS', 'FUEGO']
+  [OK] motivacion_detalle        | Antes: ['Otro', 'Violencia Comunitaria', 'Delincuencia común']
+                                 | Después: ['OTRO', 'VIOLENCIA COMUNITARIA', 'DELINCUENCIA COMUN']
+  [OK] causa_especifica          | Antes: ['Otro', 'Riñas', 'Robo a personas']
+                                 | Después: ['OTRO', 'RINAS', 'ROBO A PERSONAS']
+  [OK] sexo_victima              | Antes: ['Hombre', 'Mujer', 'SD']
+                                 | Después: ['HOMBRE', 'MUJER', 'SD']
+  [OK] nacionalidad_victima      | Antes: ['Ecuatoriana', 'Colombiana', 'Peruana']
+                                 | Después: ['ECUATORIANA', 'COLOMBIANA', 'PERUANA']
+  [OK] canton                    | Antes: ['CUENCA', 'CAMILO PONCE ENRIQUEZ', 'GIRON']
+                                 | Después: ['CUENCA', 'CAMILO PONCE ENRIQUEZ', 'GIRON']
+  [OK] mes_hecho                 | Antes: ['enero', 'febrero', 'marzo']
+                                 | Después: ['ENERO', 'FEBRERO', 'MARZO']
+  [OK] dia_semana                | Antes: ['viernes', 'miércoles', 'lunes']
+                                 | Después: ['VIERNES', 'MIERCOLES', 'LUNES']
+  [OK] provincia                 | Antes: ['AZUAY', 'BOLIVAR', 'CAÑAR']
+                                 | Después: ['AZUAY', 'BOLIVAR', 'CANAR']
+------------------------------------------------------------
+  Columnas normalizadas: 13
+  Total registros: 47,739
+============================================================
+============================================================
+  AUDITORÍA DE CARACTERES ESPECIALES (TILDES Y EÑES)
+============================================================
+  Patrón Regex: [áéíóúÁÉÍÓÚñÑüÜ]
+  Columnas a revisar: 13
+------------------------------------------------------------
+  [OK] No se encontraron eñes ni tildes ocultas en las columnas de texto.
+============================================================
+  Guardado intermedio: D:\Tesis\data\interim\homi_normalizado.parquet
+  Tamaño: 1466.3 KB
+============================================================
+  FASE 3: FILTRADO TEMPORAL Y GEOGRÁFICO
+============================================================
+  [3.1] Conversión anio_hecho → Int64
+        Registros antes:  47,739
+        Nulos generados:  0
+        Eliminados (NaN): 0
+        Registros después: 47,739
+  [3.2] Filtro temporal: anio_hecho <= 2024
+        Registros antes:   47,739
+        Excluidos (>2024): 9,171 → 2025: 9171
+        Registros después: 38,568
+  [3.3] Exclusión de Galápagos (cantones insulares)
+        Cantones excluidos: ['GALAPAGOS', 'ISABELA', 'SANTA CRUZ', 'SAN CRISTOBAL']
+        Registros antes:       38,568
+        Registros insulares:   2 → SANTA CRUZ: 2
+        Registros continental: 38,566
+  [3.4] Guardado insular (trazabilidad): D:\Tesis\data\interim\homi_insular_excluido.parquet
+        Registros insulares guardados: 2
+        Tamaño: 12.3 KB
+============================================================
+  REPORTE DE CONTROL — FASE 3: FILTRADO
+============================================================
+  Métrica                                      Conteo
+  ---------------------------------------- ----------
+  Registros originales (entrada Fase 3)        47,739
+  (-) Eliminados por conversión NaN                 0
+  (=) Post-conversión anio_hecho               47,739
+  (-) Excluidos por año > 2024                  9,171
+  (=) Post-filtro temporal                     38,568
+  (-) Registros insulares (Galápagos)               2
+  (=) REGISTROS CONTINENTAL FINAL              38,566
+  ---------------------------------------- ----------
+
+  Detalle de años excluidos:
+    Año 2025: 9,171 registros
+
+  Detalle de cantones insulares excluidos:
+    SANTA CRUZ: 2 registros
+
+  ──────────────────────────────────────────────────
+  [OK] Verificación de integridad: PASÓ
+       0 + 9171 + 2 + 38566 = 47739 (== 47739 original)
+
+  Tasa de retención: 80.79% (38,566 de 47,739)
+============================================================
+  [3.6] Guardado intermedio: D:\Tesis\data\interim\homi_filtrado_2024.parquet
+        Tamaño: 1216.6 KB
+
+[OK] Pipeline Fases 1-3 completado exitosamente.

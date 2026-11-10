@@ -1,0 +1,37 @@
+The search for ""El Piedrero" "La Troncal" "Cañar" "CONALI" OR "CELIR" OR "INEC" límites territoriales Registro Oficial" returned the following summary:
+Los términos y normativas que vinculan a **"El Piedrero"**, el cantón **La Troncal** (provincia de **Cañar**) y los organismos técnicos de demarcación territorial como el **CONALI** (Comité Nacional de Límites Internos) se encuentran estrechamente relacionados con los procesos de solución de conflictos limítrofes internos en el Ecuador y su publicación en el **Registro Oficial**[1][2].
+
+Los aspectos clave de este conflicto y su tratamiento legal e institucional incluyen:
+
+### 1. La naturaleza del conflicto en "El Piedrero"
+* **Zona No Delimitada histórica:** Durante décadas, el recinto **El Piedrero** (junto con otros sectores como Pueblo Nuevo y la Colonia Amazonas) constituyó una "zona no delimitada" situada en los bordes fronterizos entre las provincias de **Guayas** (cantón El Triunfo) y **Cañar** (cantón La Troncal)[3][4][5].
+* **Dualidad administrativa:** Debido a la indefinición legal, los habitantes de esta zona han mantenido una tensa convivencia institucional, recibiendo servicios públicos, educación (escuelas fiscales) y atención de salud tanto de entidades de Cañar como de Guayas[6][4][7].
+
+### 2. El rol del CONALI y el marco legal
+* Con la implementación de la **Ley de Fijación de Límites Territoriales Internos** (cuyo organismo ejecutor y técnico es el **CONALI**), se establecieron los mecanismos institucionales para solucionar diferendos limítrofes pendientes en el país[8][9].
+* El **INEC** (Instituto Nacional de Estadística y Censos), por su parte, integra estos lineamientos en su cartografía oficial y en el *Clasificador Geográfico Estadístico*, reflejando en sus bases de datos las delimitaciones y los cambios en la División Político-Administrativa (DPA)[8][10].
+
+### 3. Resolución y publicaciones en el Registro Oficial
+* **Decreto Ejecutivo N.° 1395:** Emitido el 16 de mayo de 2017 y publicado en el **Registro Oficial Suplemento N.° 2 del 29 de mayo de 2017**, mediante el cual se determinó de manera oficial el límite territorial entre las provincias de Guayas y Cañar, asignando formalmente el sector de El Piedrero a la jurisdicción de la provincia del Guayas (cantón El Triunfo)[11][12][5].
+* **Acciones legales posteriores:** La decisión generó rechazo en las autoridades y GADs de la provincia del Cañar y del cantón La Troncal, quienes agotaron instancias políticas e interpusieron acciones legales de carácter constitucional (como la demanda de inconstitucionalidad en contra del Decreto 1395)[5][13]. 
+* **Fallos de la Corte Constitucional:** La Corte Constitucional del Ecuador emitió pronunciamientos (como la Sentencia 31-17-IN/23), desestimando demandas de inconstitucionalidad sobre el decreto de límites, ratificando la vigencia formal del trazado cartográfico dictaminado por los procedimientos de ley[12][13]. 
+
+*Nota: Para obtener las coordenadas exactas en formato digital georreferenciado (shapefiles), los Gobiernos Autónomos Descentralizados y la ciudadanía deben realizar el trámite formal de solicitud de coberturas geográficas directamente ante el Ministerio de Gobierno y el CONALI[14].*
+
+Sources:
+[1] [latroncal.gob.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE6k_rEzdDDiJITi7Gdp2ci9l4ysMu_R3SrtWJjvEeQP3NQlFhKwEE5Gt3AQvGiG-KYVKpkpDo3HYilT_lEYiHgTKx5pjVWPzL5RYSZPi_oBrCZzRb-vd0sxywWFElk9vbCDbLIupZBZNpuWS_9ydmVSUKjSbdR26uSv3-lLcOejQWuaNkYMcXodnlKNkGlJiCAvnyzKha_oyD3ZCTiHb4WvLK9vsyxol6brzWxMODg)
+[2] [webnode.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGws26kQY_RbChtqkTiYAperag6tjeiWAsszEncfJ22ig4skiLwmwUSRMVT5hSl5WSwSe1ljCFcg9ZbhvOflwgjkjvTjmHkNbtVd3aY7SoF8jd75I6iGYjCvMidekgLUCQZSDRIMA==)
+[3] [expreso.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHEvHg6gZeosPm0pemGeGkyjH2CzK5qm8l92z5rEyk9dc8UADb0Q2puFqMfX5IhALnATWu66T1N7DXn_m30fybyfCYloNXkVOi24pgy403hHTxuS8C7yhkOFun7RwbNlGEl2zpG3vuMQaYNemtNGA_-hQ8r5X_6CjebNmFi1lc=)
+[4] [ecuavisa.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFFEIExtM2zDaO-Qjm1WCLoHJmr_T61Y6lCOuQoewxmLwd7QDgoqWVfElSu1iY5nS2C39jvv9kJn8M3NJt4dM9KA5HcMGQMfjpLWqiqJbHOVPtP_umTrJZz_ovuJinq4crATQMUsSABWjBI4aXcVbzWkACE0MSz3S_smbaiGoqDQe9HXop6b6fA17FZIxiRr1MEZvGOUh4DWJwMwMDWhJiqpsaY)
+[5] [lanacion.com.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGaj8-bZlHd_E2m7wOui333wRohqVHLmzUyqL9bkLURTJsbOKK7QCJRD3MOgSQfZyJWesRWSDU-Ddafflbk_jFMxxnDYNBPr7jthhDoaNl19SJqN-idsIJ4NEElPCmHVUI6TVmUAhhdki6sRxPBeoz6EgF56AOai0FQMUxWhXxf)
+[6] [youtube.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG59odYFGAqj8FL9pP21ipcfj0N5nlOzZJEsTyN52iPuyNaJquz8xh9el2YzvKBfg4t4cxqenUvgnzYcnWlOBxKQMiaGH3jiWtie_KRAKWHW0_iVn4RZpulmFlQkz3xYK7H)
+[7] [el-triunfo.gob.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEWhzhdmaeRB3LQsxfjMUPlVFnJE6N2J9ojGQktWu1VqHHBt4IRDGxcLqLuVlkSVGoFdOuascX_COxQBRDXYE3pRGPvpSf7jOnmHII2umKzcRNF6rXCTgRY17-NkNpjgev8nqLv-oWqjjI=)
+[8] [ecuadorencifras.gob.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE1-zMGMk53bdIcUBwib-6gF_5a1VOWjmfkqdRRZbHQNg8jWwx4VeFlmstnsKinUND56BlThVhc56Dyf1NSXspT9qDmOJGZUQlz_v4akYuG1c0Fp9FLBnsCGUnH7RUyn02hiUI_ZsseyAPETjT5fUZDFyR8AsjyWM2aVBeLGQFn94yNFe-nLkXIGn8323IoOaBolTLJqRxaSZRplNFU948LMXo=)
+[9] [www.gob.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHU3ysw_YgX4kvzrLlHAOKaCWsf1B68eyrUmzF_tlfMdJF3YXMAJbtb_BxzLqoxlbum-_AD1ZBRqyKhfW_qv73pxaapGCJzOprhYwfd9yz7)
+[10] [scribd.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHv9gHaxyRoGV7fHW0Pm-FkWVqZQUMkvc8MIv_UFlubeKTqhccGE4qODrYEyGTFBOO6lHlPM7eqwaZ1545Yu23vtYCAsR3XAYMY7iSlgPapmOg7CcLD11bCRtF7ALzMvHpj2rnmgO40Desvr6tih1eib-RKGVhdsn96TzjvO7a_AxfPCRecjLBCTQ==)
+[11] [expreso.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFZWxlMCoa3h9L6ykAmoDMSm-6FhN4D7MPIZOuP649wt4dLacRjRmRGf1YATelt2bVLDl0Cimyz6ZV-r1QzgJcuN_aDCddJrJHTKIXRCbnW3sITKgHF0Lcu_mMRplemDoaRCIVS1Ee8QkouQV19tN6jYlwEbu_jgUIO6J6PUXU=)
+[12] [corteconstitucional.gob.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEyeo_bw2bXcg6ZPeBMmUb3LdnbIhF1vR55C6cOh07yTq8Rn9uNRl6BY-vq3DK6s1c6qn-5XHmQw4RNDt3SmHdOgFf7uVWDiPwfsIHp4NXm4_l4U65gccsomegKgqCSZal481ymFsKDbQWPPojz6tQnL_cLGovMlRxsK9WjbTvrr-onNfpxhzf0dLRQxnmqU4hXedjpWoKrGmKzlMFaZPvmOyDKo1pX05VIqFxAR5FSgy0veWdHFkbhKPtYignIHH82x6BSxKV8DmqWf0GZnKTZRACIBVc=)
+[13] [gobiernodelcanar.gob.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGmfVOJUdUamzGDwdNBRHI4XutNtx_PnPV13A9w4JmLP0zW1LMSgivPXYM8M-Boxzyj7sSjqMyfXBkgYdcum3BHTZAV563tk-lhgBDD65zENup4r-DG2mLVMg2Dcz3g2YrKosNDLpDkky-IgoA2euYlBvyL9jKI1saeVn_rYPLZrahmFF2pKzw=)
+[14] [ministeriodegobierno.gob.ec](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF-E3jk2rYL55s5qKuEzC1E50z8bZzyx54yjGXRAu-WEa1B5EomZZEJK5fctwTxK6-gKDVjOiLvsuxeugZ6k19N3nTxrO3qRdzDTEnwocwG6EpV9pxk9xRIE1swszfFL4HORBRBKQIvPQBPMTNnhMjYz2hOUm8FIalMgPkqoqzNb3DEwYnTGyQl6X92_IUawrnBE7d8eGVj2b5fwpG592wCFlTa6STgPkQ5USS27WYpr7yn6JOYRf8ASiAt)
+
+Note: Source URLs are HTTP redirects; check where they resolve if you need the direct link.

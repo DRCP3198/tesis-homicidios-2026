@@ -1,0 +1,16 @@
+Command exited with code 0.
+
+Command output:
+=== Filas donde canton == provincia (excepto cuando el canton real se llama igual que su provincia: ESMERALDAS, LOJA, PASTAZA, MORONA, ORELLANA, CANAR, CARCHI/etc) ===
+  provincia      canton  filas
+      CANAR       CANAR     18
+     EL ORO      EL ORO      3
+ ESMERALDAS  ESMERALDAS   1437
+     GUAYAS      GUAYAS     11
+       LOJA        LOJA    118
+     MANABI      MANABI      2
+   ORELLANA    ORELLANA    131
+    PASTAZA     PASTAZA     95
+  PICHINCHA   PICHINCHA      2
+SANTA ELENA SANTA ELENA    208
+  SUCUMBIOS   SUCUMBIOS      4

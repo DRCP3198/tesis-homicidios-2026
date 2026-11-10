@@ -100,9 +100,11 @@ ANIO_MAXIMO = 2024
 CANTONES_GALAPAGOS = ["GALAPAGOS", "ISABELA", "SANTA CRUZ", "SAN CRISTOBAL"]
 
 # Provincias a excluir del mapa base
-# Se usa en la Fase 4 (cartografia.py) para quitar del mapa las zonas que
-# no forman parte del análisis continental.
-PROVINCIAS_EXCLUIR_MAPA = ["GALAPAGOS", "ZONA NO DELIMITADA"]
+# Se usa en la Fase 4 (cartografia.py) para quitar del mapa la región insular
+# que no forma parte del análisis continental. Las antiguas "ZONA NO DELIMITADA"
+# (Manga del Cura, Las Golondrinas y El Piedrero) ya NO se excluyen, sino que se
+# homologan a su jurisdicción provincial y cantonal vigente (Opción A).
+PROVINCIAS_EXCLUIR_MAPA = ["GALAPAGOS"]
 
 # Sistema de referencia de coordenadas objetivo (WGS84)
 # Define el sistema de referencia de coordenadas WGS84 (EPSG:4326) 
@@ -201,10 +203,45 @@ MAPEO_CARACTERES_CORRUPTOS_SHP: dict[str, str] = {
 #    Usar la pareja `(provincia, canton)` evita mezclar ambos cantones y asigna a cada uno su
 #    nombre oficial exacto según la jurisdicción provincial donde ocurrió el hecho.
 MAPEO_HOMOLOGACION_CANTONES: dict[tuple[str, str], str] = {
+    # Variantes ortográficas y de desambiguación interprovincial:
     ("LOS RIOS", "PUEBLO VIEJO"):                "PUEBLOVIEJO",
     ("ORELLANA", "PUERTO FRANCISCO DE ORELLANA"): "ORELLANA",
     ("COTOPAXI", "SAN MIGUEL DE SALCEDO"):        "SALCEDO",
     ("BOLIVAR",  "SAN MIGUEL DE SALCEDO"):        "SAN MIGUEL",
+    # Antiguas "Zonas No Delimitadas" (Código INEC 90) homologadas según resoluciones
+    # legales de fijación de límites territoriales internos (2015–2017):
+    #   • MANGA DEL CURA → MANABI / EL CARMEN (Consulta Popular CNE 27-sep-2015, R.O. N.° 611;
+    #     Ley Fijación de Límites promulgada en R.O. Suplemento N.° 994 del 28-abr-2017).
+    #   • LAS GOLONDRINAS → IMBABURA / COTACACHI (Consulta Popular CNE 03-abr-2016;
+    #     Ley Fijación de Límites promulgada en R.O. Suplemento N.° 999 del 08-may-2017).
+    #   • EL PIEDRERO → CANAR / LA TRONCAL (Adscripción administrativa SENPLADES Acuerdo N.° 557-2012
+    #     Distrito 03D03 La Troncal y Subzona Policial Cañar N.° 3 en el clasificador MDG/INEC).
+    ("MANABI",   "MANGA DEL CURA"):               "EL CARMEN",
+    ("IMBABURA", "LAS GOLONDRINAS"):              "COTACACHI",
+    ("CANAR",    "EL PIEDRERO"):                  "LA TRONCAL",
+}
+
+# 3. Homologación cartográfica de los 3 polígonos `DPA_PROVIN == '90'` ("ZONA NO DELIMITADA")
+#    en el shapefile `nxcantones.shp`:
+#    Cada clave es el nombre `CANTON_MAPA` original del polígono en el shapefile y su valor es
+#    una tupla `(provincia_oficial, canton_oficial, sustento_normativo)` para integrar el polígono
+#    a su jurisdicción vigente sin dejar huecos cartográficos en el territorio continental.
+MAPEO_ZONAS_NO_DELIMITADAS_SHP: dict[str, tuple[str, str, str]] = {
+    "MANGA DEL CURA": (
+        "MANABI",
+        "EL CARMEN",
+        "Consulta Popular CNE (R.O. 611, 2015) / Ley R.O.S. 994 (28-abr-2017)",
+    ),
+    "LAS GOLONDRINAS": (
+        "IMBABURA",
+        "COTACACHI",
+        "Consulta Popular CNE (03-abr-2016) / Ley R.O.S. 999 (08-may-2017)",
+    ),
+    "EL PIEDRERO": (
+        "CANAR",
+        "LA TRONCAL",
+        "SENPLADES Acuerdo 557-2012 (Distrito 03D03) / Subzona Policial Cañar N.° 3",
+    ),
 }
 
 

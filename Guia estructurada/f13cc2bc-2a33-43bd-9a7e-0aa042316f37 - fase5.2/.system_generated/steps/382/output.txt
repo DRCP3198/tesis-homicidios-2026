@@ -1,0 +1,18 @@
+Command exited with code 0.
+
+Command output:
+=== Caracteres no-ASCII en nxcantones.shp (DPA_DESPRO y DPA_DESCAN) ===
+DPA_DESPRO : ['CAÑAR']
+DPA_DESCAN : ['RUMIÐAHUI', 'BAÑOS DE AGUA SANTA', 'OÑA', 'CAÑAR', 'PIÑAS', 'CRNEL. MARCELINO MARIDUEÑA', 'LOGROÐO']
+
+=== Valores de canton en CSV que NO existen literalmente en DPA_DESCAN del shapefile ===
+  BANOS DE AGUA SANTA              ->   25 filas | provincias en CSV: {'TUNGURAHUA': 25}
+  CANAR                            ->   18 filas | provincias en CSV: {'CANAR': 18}
+  CRNEL. MARCELINO MARIDUENA       ->   34 filas | provincias en CSV: {'GUAYAS': 34}
+  EL ORO                           ->    3 filas | provincias en CSV: {'EL ORO': 3}
+  GUAYAS                           ->   11 filas | provincias en CSV: {'GUAYAS': 11}
+  MANABI                           ->    2 filas | provincias en CSV: {'MANABI': 2}
+  PINAS                            ->   16 filas | provincias en CSV: {'EL ORO': 16}
+  PUEBLO VIEJO                     ->   94 filas | provincias en CSV: {'LOS RIOS': 94}
+  PUERTO FRANCISCO DE ORELLANA     ->   61 filas | provincias en CSV: {'ORELLANA': 61}
+  SAN MIGUEL DE SALCEDO            ->    4 filas | provincias en CSV: {'COTOPAXI': 3, 'BOLIVAR': 1}

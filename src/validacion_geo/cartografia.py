@@ -29,7 +29,8 @@ from src.ingesta.config import (
     ARCHIVO_SHAPEFILE_CANTONES,     # data/raw/cartografia/nxcantones.shp
     CRS_OBJETIVO,                   # 4326 (WGS84)
     MAPEO_CARACTERES_CORRUPTOS_SHP, # {'Ð': 'N', 'ð': 'n'} (corrección de Ñ corrupta en shapefile)
-    PROVINCIAS_EXCLUIR_MAPA,        # ['GALAPAGOS', 'ZONA NO DELIMITADA']
+    MAPEO_ZONAS_NO_DELIMITADAS_SHP, # Homologación legal de los 3 polígonos Código 90
+    PROVINCIAS_EXCLUIR_MAPA,        # ['GALAPAGOS']
 )
 # Reutilizamos la MISMA función de limpieza de texto de la Fase 2, para que
 # los nombres del mapa queden idénticos a los de la base de datos.
@@ -111,6 +112,71 @@ def reparar_codificacion_shapefile(mapa: gpd.GeoDataFrame) -> pd.Series:
         print("-" * 60)
 
     return canton_mapa
+
+
+# =========================================================================
+# FUNCIÓN AUXILIAR: Homologación legal de las antiguas "Zonas No Delimitadas"
+# =========================================================================
+def homologar_zonas_no_delimitadas_shp(mapa: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Integra cartográficamente los 3 polígonos catalogados en `nxcantones.shp`
+    bajo el código INEC `90` (`DPA_DESPRO == "ZONA NO DELIMITADA"`) hacia su
+    jurisdicción provincial y cantonal vigente según las Leyes de Fijación de
+    Límites Territoriales Internos (2015–2017) y la zonificación SENPLADES/INEC.
+
+    ¿Por qué homologar estos 3 polígonos en vez de eliminarlos del mapa?
+        1. Si se eliminan del mapa continental, quedan 3 "huecos" geográficos
+           dentro del Ecuador continental y los 117 homicidios ocurridos allí
+           no intersectan ningún polígono en el `sjoin` (cayendo todos al limbo).
+        2. Al asignar cada polígono a su provincia y cantón legal:
+           • `MANGA DEL CURA` (`9003`)  → `MANABI` / `EL CARMEN` (Ley R.O.S. N.° 994, 2017)
+           • `LAS GOLONDRINAS` (`9001`) → `IMBABURA` / `COTACACHI` (Ley R.O.S. N.° 999, 2017)
+           • `EL PIEDRERO` (`9004`)     → `CANAR` / `LA TRONCAL` (SENPLADES Distrito 03D03)
+           la auditoría punto-en-polígono valida automáticamente los casos cuya
+           jurisdicción coincide y deja en el limbo únicamente las discrepancias
+           reales de lindero intercantonal o interprovincial.
+
+    Parameters
+    ----------
+    mapa : gpd.GeoDataFrame
+        GeoDataFrame del shapefile cantonal con la columna `CANTON_MAPA` creada.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        GeoDataFrame con `DPA_DESPRO` y `CANTON_MAPA` actualizados para las
+        3 antiguas Zonas No Delimitadas.
+    """
+    mapa = mapa.copy()
+    filas_homologadas: list[tuple[str, str, str, str, str]] = []
+
+    for zona_znd, (prov_oficial, canton_oficial, sustento) in MAPEO_ZONAS_NO_DELIMITADAS_SHP.items():
+        # Buscamos el polígono cuyo CANTON_MAPA coincida con la antigua Zona No Delimitada.
+        mascara = mapa["CANTON_MAPA"] == zona_znd
+        if mascara.any():
+            for idx in mapa.index[mascara]:
+                cod_dpa = str(mapa.loc[idx, "DPA_CANTON"]) if "DPA_CANTON" in mapa.columns else "90XX"
+                filas_homologadas.append(
+                    (cod_dpa, zona_znd, prov_oficial, canton_oficial, sustento)
+                )
+            # Actualizamos tanto la provincia del mapa (`DPA_DESPRO`) como el cantón (`CANTON_MAPA`).
+            mapa.loc[mascara, "DPA_DESPRO"] = prov_oficial
+            mapa.loc[mascara, "CANTON_MAPA"] = canton_oficial
+
+    if filas_homologadas:
+        print("-" * 60)
+        print("  [AUDITORÍA ZND] Incorporación legal de antiguas Zonas No Delimitadas (Código 90):")
+        print(
+            f"  {'DPA':<6} | {'Zona original (SHP)':<17} | "
+            f"{'Jurisdicción asignada':<22} | {'Sustento Legal / Normativo'}"
+        )
+        print("  " + "-" * 96)
+        for cod, z_orig, prov_dest, can_dest, norma in filas_homologadas:
+            destino = f"{prov_dest} - {can_dest}"
+            print(f"  {cod:<6} | {z_orig:<17} | {destino:<22} | {norma}")
+        print("-" * 60)
+
+    return mapa
 
 
 # =========================================================================
@@ -223,12 +289,15 @@ def cargar_mapa_cantonal(
     # reparar_codificacion_shapefile(mapa) → repara 'Ð', imprime la muestra
     # en consola y devuelve la serie normalizada para CANTON_MAPA.
     mapa["CANTON_MAPA"] = reparar_codificacion_shapefile(mapa)
-    # .nunique() → número de cantones distintos.
-    print(f"  Cantones en mapa (total): {mapa['CANTON_MAPA'].nunique()}")
+    # .nunique() → número de cantones distintos antes de integrar las ZND.
+    print(f"  Cantones en mapa (antes de integrar ZND): {mapa['CANTON_MAPA'].nunique()}")
 
-    # ── Paso 4.2b: Excluir Galápagos y Zona No Delimitada ──
-    # Equivale a: filter(DPA_DESPRO != "GALAPAGOS",
-    #                    DPA_DESPRO != "ZONA NO DELIMITADA")
+    # ── Paso 4.2b: Integrar legalmente las antiguas Zonas No Delimitadas (Código 90) ──
+    # Asigna MANGA DEL CURA -> MANABI/EL CARMEN, LAS GOLONDRINAS -> IMBABURA/COTACACHI
+    # y EL PIEDRERO -> CANAR/LA TRONCAL según las Leyes de Fijación de Límites (2015-2017).
+    mapa = homologar_zonas_no_delimitadas_shp(mapa)
+
+    # ── Paso 4.2c: Excluir Galápagos (región insular) ──
     # Necesitamos normalizar DPA_DESPRO también para la comparación.
     # (Ej: en el shapefile viene "CAÑAR" con Ñ; normalizado queda "CANAR").
     #
@@ -245,8 +314,8 @@ def cargar_mapa_cantonal(
     n_despues = len(mapa)
     n_excluidos = n_antes - n_despues  # Cuántos polígonos se quitaron.
 
-    print(f"  Excluidos (Galápagos + Zona No Delim.): {n_excluidos}")
-    print(f"  Cantones continental final: {mapa['CANTON_MAPA'].nunique()}")
+    print(f"  Excluidos insulares (Galápagos): {n_excluidos}")
+    print(f"  Polígonos continentales activos: {len(mapa)} ({mapa['CANTON_MAPA'].nunique()} cantones únicos)")
 
     # Control de seguridad: si por algún error el filtro borró todo el mapa,
     # detenemos el programa con un mensaje claro (sin mapa no se puede validar nada).

@@ -1,0 +1,11 @@
+Command exited with code 0.
+
+Command output:
+Shape: (38566, 21)
+Lat samples: ['-2.88278', '-2.901871', '-2.898014', '-2.890092', '-2.894827', '-2.864049', '-2.881042', '-2.964708', '-2.965395', '-2.897355']
+No decimal: 3
+Lat examples: ['0', '-4e-06', '-4e-04']
+Lon examples: ['0', '-79.388594', '-79.3854']
+Canton examples: ['MANGA DEL CURA', 'LA CONCORDIA', 'LA CONCORDIA']
+Lat NaN: 0
+Lon NaN: 0

@@ -1,0 +1,26 @@
+Command exited with code 0.
+
+Command output:
+Shape: (224, 7)
+
+Columns: ['DPA_VALOR', 'DPA_ANIO', 'DPA_CANTON', 'DPA_DESCAN', 'DPA_PROVIN', 'DPA_DESPRO', 'geometry']
+
+Dtypes:
+DPA_VALOR        int32
+DPA_ANIO        object
+DPA_CANTON      object
+DPA_DESCAN      object
+DPA_PROVIN      object
+DPA_DESPRO      object
+geometry      geometry
+dtype: object
+
+CRS: EPSG:32717
+
+Sample DPA_DESCAN (first 10):
+['GUARANDA', 'CHILLANES', 'CHIMBO', 'ECHEANDIA', 'SAN MIGUEL', 'CALUMA', 'LAS NAVES', 'TULCAN', 'BOLIVAR', 'ESPEJO']
+
+Sample DPA_DESPRO unique:
+['AZUAY', 'BOLIVAR', 'CARCHI', 'CAÑAR', 'CHIMBORAZO', 'COTOPAXI', 'EL ORO', 'ESMERALDAS', 'GALAPAGOS', 'GUAYAS', 'IMBABURA', 'LOJA', 'LOS RIOS', 'MANABI', 'MORONA SANTIAGO', 'NAPO', 'ORELLANA', 'PASTAZA', 'PICHINCHA', 'SANTA ELENA', 'SANTO DOMINGO DE LOS TSACHILAS', 'SUCUMBIOS', 'TUNGURAHUA', 'ZAMORA CHINCHIPE', 'ZONA NO DELIMITADA']
+
+Total cantones: 222
