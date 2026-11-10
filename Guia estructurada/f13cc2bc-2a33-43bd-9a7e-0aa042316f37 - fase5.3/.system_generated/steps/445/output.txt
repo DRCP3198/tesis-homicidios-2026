@@ -1,0 +1,26 @@
+Command exited with code 0.
+
+Command output:
+=== EN EL CSV POR NOMBRE DE CANTÓN ===
+provincia  canton         
+CANAR      EL PIEDRERO        51
+IMBABURA   LAS GOLONDRINAS     1
+MANABI     MANGA DEL CURA     15
+dtype: int64
+
+=== POLIGONOS ZONA NO DELIMITADA EN SHP ===
+    DPA_PROVIN          DPA_DESPRO DPA_CANTON       DPA_DESCAN
+80          90  ZONA NO DELIMITADA       9001  LAS GOLONDRINAS
+81          90  ZONA NO DELIMITADA       9004      EL PIEDRERO
+215         90  ZONA NO DELIMITADA       9003   MANGA DEL CURA
+
+=== PUNTOS QUE CAEN DENTRO DE LOS 3 POLIGONOS ZND DEL SHP ===
+DPA_DESCAN       provincia  canton         
+EL PIEDRERO      CANAR      EL PIEDRERO        51
+                            LA TRONCAL         17
+                 GUAYAS     GUAYAQUIL           1
+LAS GOLONDRINAS  IMBABURA   IBARRA              9
+                            LAS GOLONDRINAS     1
+MANGA DEL CURA   MANABI     EL CARMEN          24
+                            MANGA DEL CURA     14
+dtype: int64

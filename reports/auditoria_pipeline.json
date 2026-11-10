@@ -1,13 +1,13 @@
 {
-  "fecha_generacion_utc": "2026-11-10T16:18:09Z",
+  "fecha_generacion_utc": "2026-11-10T22:16:42Z",
   "registros_brutos_iniciales": 47739,
   "registros_excluidos_temporal": 9171,
   "registros_excluidos_insular": 2,
   "registros_universo_filtrado": 38566,
   "registros_finales_etiquetados": 38565,
-  "geo_correctos_primera_auditoria": 38503,
-  "candidatos_fuera_poligono": 63,
-  "limbo_formato_correcto_retenidos": 62,
+  "geo_correctos_primera_auditoria": 38535,
+  "candidatos_fuera_poligono": 31,
+  "limbo_formato_correcto_retenidos": 30,
   "candidatos_corruptos_sin_decimal": 1,
   "coordenadas_rescatadas_algoritmo": 0,
   "coordenadas_descartadas_irreversibles": 1,
@@ -18,7 +18,7 @@
     "escenario_4_negativo_cero": 0
   },
   "tasa_retencion_post_filtro_pct": 80.7851,
-  "precision_topologica_inicial_pct": 99.8366,
+  "precision_topologica_inicial_pct": 99.9196,
   "tasa_rescate_sobre_corruptos_pct": 0.0,
   "efectividad_georreferenciacion_pct": 99.9974,
   "retencion_global_bruto_a_final_pct": 80.783,
@@ -75,5 +75,5 @@
   "fecha_min": "2010-01-01",
   "fecha_max": "2024-12-31",
   "provincias_unicas": 23,
-  "cantones_unicos": 214
+  "cantones_unicos": 211
 }

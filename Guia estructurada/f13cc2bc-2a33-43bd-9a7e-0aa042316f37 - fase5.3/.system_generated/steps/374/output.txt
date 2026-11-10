@@ -1,0 +1,43 @@
+Command exited with code 0.
+
+Command output:
+============================================================
+  FASE 4.1–4.2: CARGA Y HOMOLOGACIÓN CARTOGRÁFICA
+============================================================
+  Leyendo shapefile: D:\Tesis\data\raw\cartografia\nxcantones.shp
+  Polígonos cargados: 224
+  CRS original: EPSG:32717
+  Columnas: ['DPA_VALOR', 'DPA_ANIO', 'DPA_CANTON', 'DPA_DESCAN', 'DPA_PROVIN', 'DPA_DESPRO', 'geometry']
+  CRS reproyectado: EPSG:4326
+  Geometrías reparadas: 1 (antes) → 0 (despues)
+  Cantones en mapa (total): 222
+  Excluidos (Galápagos + Zona No Delim.): 6
+  Cantones continental final: 216
+============================================================
+  [4.3] Creación de puntos geoespaciales
+        Registros entrada: 38,566
+        NaN en latitud:  0
+        NaN en longitud: 0
+        Registros con coordenadas válidas: 38,566
+        GeoDataFrame creado: 38,566 puntos en EPSG:4326
+  [4.4] Auditoría topológica: punto-en-polígono (sjoin vectorizado)
+        Total puntos evaluados: 38,566
+        Correctos (dentro de su cantón): 38,166 (98.96%)
+        A corregir (fuera de su cantón): 400 (1.04%)
+  [4.5] Separación por formato de coordenadas
+        Con punto decimal (limbo): 399
+        Sin punto decimal (reparar): 1
+Desglose de los 135 que no cayeron en los 216 cantones:
+ provincia          canton                 DPA_DESPRO      DPA_DESCAN  casos
+     CANAR     EL PIEDRERO         ZONA NO DELIMITADA     EL PIEDRERO     51
+    MANABI       EL CARMEN         ZONA NO DELIMITADA  MANGA DEL CURA     24
+     CANAR      LA TRONCAL         ZONA NO DELIMITADA     EL PIEDRERO     17
+    MANABI  MANGA DEL CURA         ZONA NO DELIMITADA  MANGA DEL CURA     14
+    EL ORO         MACHALA [BORDE COSTERO / ESTUARIO] [BORDE COSTERO]     13
+  IMBABURA          IBARRA         ZONA NO DELIMITADA LAS GOLONDRINAS      9
+    GUAYAS       GUAYAQUIL [BORDE COSTERO / ESTUARIO] [BORDE COSTERO]      2
+ESMERALDAS      ESMERALDAS [BORDE COSTERO / ESTUARIO] [BORDE COSTERO]      1
+    GUAYAS     SAMBORONDON [BORDE COSTERO / ESTUARIO] [BORDE COSTERO]      1
+    GUAYAS       GUAYAQUIL         ZONA NO DELIMITADA     EL PIEDRERO      1
+  IMBABURA LAS GOLONDRINAS         ZONA NO DELIMITADA LAS GOLONDRINAS      1
+    MANABI      PORTOVIEJO [BORDE COSTERO / ESTUARIO] [BORDE COSTERO]      1

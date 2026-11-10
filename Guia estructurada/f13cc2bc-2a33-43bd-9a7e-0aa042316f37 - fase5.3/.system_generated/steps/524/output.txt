@@ -1,0 +1,1 @@
+Made 1 replacement in D:\Tesis\tests\test_reparar_coordenadas.py starting at line 630 (+29/-0 lines).

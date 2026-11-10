@@ -1,0 +1,65 @@
+Command exited with code 0.
+
+Command output:
+============================================================
+  FASE 4.1–4.2: CARGA Y HOMOLOGACIÓN CARTOGRÁFICA
+============================================================
+  Leyendo shapefile: D:\Tesis\data\raw\cartografia\nxcantones.shp
+  Polígonos cargados: 224
+  CRS original: EPSG:32717
+  Columnas: ['DPA_VALOR', 'DPA_ANIO', 'DPA_CANTON', 'DPA_DESCAN', 'DPA_PROVIN', 'DPA_DESPRO', 'geometry']
+  CRS reproyectado: EPSG:4326
+  Geometrías reparadas: 1 (antes) → 0 (despues)
+------------------------------------------------------------
+  [AUDITORÍA SHP] Corrección de caracteres corruptos en DPA_DESCAN:
+  Provincia (SHP)    | DPA_DESCAN (Crudo) | Sin corrección | CANTON_MAPA (Corregido)
+  ------------------------------------------------------------------
+  PICHINCHA          | RUMIÐAHUI      | RUMIDAHUI      | RUMINAHUI     
+  MORONA SANTIAGO    | LOGROÐO        | LOGRODO        | LOGRONO       
+------------------------------------------------------------
+  Cantones en mapa (total): 222
+  Excluidos (Galápagos + Zona No Delim.): 6
+  Cantones continental final: 216
+============================================================
+  [4.3] Creación de puntos geoespaciales
+        Registros entrada: 38,566
+        NaN en latitud:  0
+        NaN en longitud: 0
+        Registros con coordenadas válidas: 38,566
+        GeoDataFrame creado: 38,566 puntos en EPSG:4326
+  [4.4] Auditoría topológica: punto-en-polígono (sjoin vectorizado)
+        Total puntos evaluados: 38,566
+        Correctos (dentro de su cantón): 38,396 (99.56%)
+        A corregir (fuera de su cantón): 170 (0.44%)
+  [4.5] Separación por formato de coordenadas
+        Con punto decimal (limbo): 169
+        Sin punto decimal (reparar): 1
+
+=== DESGLOSE DE LOS 169 DEL LIMBO ACTUAL ===
+DPA_DESPRO          DPA_DESCAN               provincia   canton                  
+CARCHI              SAN PEDRO DE HUACA       CARCHI      TULCAN                       3
+EL ORO              ARENILLAS                EL ORO      HUAQUILLAS                   6
+                    EL GUABO                 EL ORO      EL ORO                       1
+                    PASAJE                   EL ORO      EL ORO                       1
+                    SANTA ROSA               EL ORO      EL ORO                       1
+GUAYAS              DURAN                    GUAYAS      GUAYAS                       2
+                    GUAYAQUIL                GUAYAS      GUAYAS                       8
+                    NARANJAL                 GUAYAS      GUAYAS                       1
+                    SAN JACINTO DE YAGUACHI  GUAYAS      ALFREDO BAQUERIZO MORENO     1
+LOS RIOS            MOCACHE                  GUAYAS      BALZAR                       1
+MANABI              MANTA                    MANABI      MANABI                       2
+MAR_O_BORDE_COSTA   FUERA_POLIGONO           EL ORO      MACHALA                     13
+                                             ESMERALDAS  ESMERALDAS                   1
+                                             GUAYAS      GUAYAQUIL                    2
+                                                         SAMBORONDON                  1
+                                             MANABI      PORTOVIEJO                   1
+ORELLANA            LA JOYA DE LOS SACHAS    ORELLANA    ORELLANA                     4
+PICHINCHA           QUITO                    PICHINCHA   PICHINCHA                    2
+TUNGURAHUA          MOCHA                    TUNGURAHUA  TISALEO                      1
+ZONA NO DELIMITADA  EL PIEDRERO              CANAR       EL PIEDRERO                 51
+                                                         LA TRONCAL                  17
+                                             GUAYAS      GUAYAQUIL                    1
+                    LAS GOLONDRINAS          IMBABURA    IBARRA                       9
+                                                         LAS GOLONDRINAS              1
+                    MANGA DEL CURA           MANABI      EL CARMEN                   24
+                                                         MANGA DEL CURA              14

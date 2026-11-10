@@ -1,0 +1,21 @@
+Task: f13cc2bc-2a33-43bd-9a7e-0aa042316f37/task-510
+Status: RUNNING
+Log: file:///C:/Users/Alu/.gemini/antigravity/brain/f13cc2bc-2a33-43bd-9a7e-0aa042316f37/.system_generated/tasks/task-510.log
+Log output:
+<truncated 313 lines>
+ auditoría topológica                38,535
+  (+) Rescatados por algoritmo decimal (4 esc.)                 0
+  (+) Limbo con formato decimal retenidos                      30
+  (-) Coordenadas descartadas irreversibles                     1
+  ------------------------------------------------ --------------
+  (=) REGISTROS FINALES ETIQUETADOS (Fase 5)               38,565
+  Columnas limpias seleccionadas                               21
+  Provincias / Cantones representados                    23 / 211
+  ---------------------------------------------------------------
+  • Efectividad de georreferenciación (sobre universo): 99.9974%
+  • Precisión topológica inicial (1ra pasada):          99.92%
+  • Tasa de rescate sobre corruptos sin decimal:        0.00%
+  • Retención global (bruto → final):                   80.78%
+  • Integridad contable del ciclo de vida:              [OK] CUADRE EXACTO
+====================================================================
+Last progress: 1s ago

@@ -1,0 +1,61 @@
+Command exited with code 0.
+
+Command output:
+============================= test session starts =============================
+platform win32 -- Python 3.13.17, pytest-9.2.0, pluggy-1.7.0 -- D:\Tesis\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Tesis
+collecting ... collected 40 items
+
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario1::test_formato_basico PASSED [  2%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario1::test_multiples_valores PASSED [  5%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario1::test_cadena_corta PASSED [  7%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario1::test_resultado_es_string PASSED [ 10%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario2::test_formato_basico PASSED [ 12%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario2::test_quito_norte_ecuatorial PASSED [ 15%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario2::test_multiples_valores PASSED [ 17%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario3::test_guayaquil PASSED [ 20%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario3::test_cuenca PASSED [ 22%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario3::test_inserta_signo_negativo PASSED [ 25%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario3::test_formato_completo PASSED [ 27%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario3::test_multiples_valores PASSED [ 30%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario4::test_quito_sur_ecuatorial PASSED [ 32%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario4::test_inserta_prefijo_negativo PASSED [ 35%]
+tests/test_reparar_coordenadas.py::TestReconstruccionEscenario4::test_multiples_valores PASSED [ 37%]
+tests/test_reparar_coordenadas.py::TestLimpiarCadenaLat::test_elimina_punto PASSED [ 40%]
+tests/test_reparar_coordenadas.py::TestLimpiarCadenaLat::test_elimina_signo_negativo PASSED [ 42%]
+tests/test_reparar_coordenadas.py::TestLimpiarCadenaLat::test_positivo_sin_signos PASSED [ 45%]
+tests/test_reparar_coordenadas.py::TestLimpiarCadenaLat::test_multiple_puntos PASSED [ 47%]
+tests/test_reparar_coordenadas.py::TestValidacionSjoin::test_escenario3_guayaquil PASSED [ 50%]
+tests/test_reparar_coordenadas.py::TestValidacionSjoin::test_escenario3_cuenca PASSED [ 52%]
+tests/test_reparar_coordenadas.py::TestValidacionSjoin::test_escenario4_quito PASSED [ 55%]
+tests/test_reparar_coordenadas.py::TestValidacionSjoin::test_canton_incorrecto_no_rescata PASSED [ 57%]
+tests/test_reparar_coordenadas.py::TestReparacionCompleta::test_rescata_registros_corruptos PASSED [ 60%]
+tests/test_reparar_coordenadas.py::TestReparacionCompleta::test_escenario3_domina_sur PASSED [ 62%]
+tests/test_reparar_coordenadas.py::TestReparacionCompleta::test_no_duplicados_entre_escenarios PASSED [ 65%]
+tests/test_reparar_coordenadas.py::TestReparacionCompleta::test_dataset_vacio_sin_error PASSED [ 67%]
+tests/test_reparar_coordenadas.py::TestSepararPorFormato::test_con_punto_va_al_limbo PASSED [ 70%]
+tests/test_reparar_coordenadas.py::TestSepararPorFormato::test_sin_punto_va_a_reparar PASSED [ 72%]
+tests/test_reparar_coordenadas.py::TestSepararPorFormato::test_mixto_separacion_correcta PASSED [ 75%]
+tests/test_reparar_coordenadas.py::TestSepararPorFormato::test_vacio_sin_error PASSED [ 77%]
+tests/test_reparar_coordenadas.py::TestEnsamblaje::test_ensamblaje_basico PASSED [ 80%]
+tests/test_reparar_coordenadas.py::TestEnsamblaje::test_elimina_columnas_auxiliares PASSED [ 82%]
+tests/test_reparar_coordenadas.py::TestEnsamblaje::test_elimina_filas_nan_coords PASSED [ 85%]
+tests/test_reparar_coordenadas.py::TestEnsamblaje::test_error_todos_vacios PASSED [ 87%]
+tests/test_reparar_coordenadas.py::TestEnsamblaje::test_preserva_columnas_originales PASSED [ 90%]
+tests/test_reparar_coordenadas.py::TestPipelineCompletoReal::test_crear_puntos_datos_reales PASSED [ 92%]
+tests/test_reparar_coordenadas.py::TestPipelineCompletoReal::test_id_temp_unico PASSED [ 95%]
+tests/test_reparar_coordenadas.py::TestPipelineCompletoReal::test_auditoria_produce_dos_grupos PASSED [ 97%]
+tests/test_reparar_coordenadas.py::TestPipelineCompletoReal::test_sin_duplicados_correctos_corregir PASSED [100%]
+
+============================== warnings summary ===============================
+src\validacion_geo\geometrias.py:226
+  D:\Tesis\src\validacion_geo\geometrias.py:226: SyntaxWarning: invalid escape sequence '\.'
+    grepl("[.]", x)  ->  x.str.contains(r'\.', regex=True)
+
+src\validacion_geo\reparacion.py:49
+  D:\Tesis\src\validacion_geo\reparacion.py:49: SyntaxWarning: invalid escape sequence '\.'
+    gsub("[.]", "", x)  ->  x.str.replace(r'\.', '', regex=True)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 40 passed, 2 warnings in 9.12s ========================

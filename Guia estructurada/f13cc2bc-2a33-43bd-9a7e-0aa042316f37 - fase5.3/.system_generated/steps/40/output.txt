@@ -1,0 +1,36 @@
+Command exited with code 0.
+
+Command output:
+============================= test session starts =============================
+platform win32 -- Python 3.13.17, pytest-9.2.0, pluggy-1.7.0 -- D:\Tesis\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Tesis
+collecting ... collected 25 items
+
+tests/test_filtros.py::TestConvertirAnioAEntero::test_tipo_resultante PASSED [  4%]
+tests/test_filtros.py::TestConvertirAnioAEntero::test_preserva_valores_validos PASSED [  8%]
+tests/test_filtros.py::TestConvertirAnioAEntero::test_elimina_valores_no_numericos PASSED [ 12%]
+tests/test_filtros.py::TestConvertirAnioAEntero::test_error_columna_faltante PASSED [ 16%]
+tests/test_filtros.py::TestConvertirAnioAEntero::test_no_altera_otras_columnas PASSED [ 20%]
+tests/test_filtros.py::TestConvertirAnioAEntero::test_preserva_conteo_sin_nulos PASSED [ 24%]
+tests/test_filtros.py::TestFiltrarAnio::test_excluye_2025 PASSED         [ 28%]
+tests/test_filtros.py::TestFiltrarAnio::test_conserva_2024_y_anteriores PASSED [ 32%]
+tests/test_filtros.py::TestFiltrarAnio::test_no_registros_posteriores_a_2024 PASSED [ 36%]
+tests/test_filtros.py::TestFiltrarAnio::test_conteo_esperado PASSED      [ 40%]
+tests/test_filtros.py::TestFiltrarAnio::test_filtro_personalizado PASSED [ 44%]
+tests/test_filtros.py::TestFiltrarAnio::test_error_columna_faltante PASSED [ 48%]
+tests/test_filtros.py::TestFiltrarAnio::test_error_tipo_no_numerico PASSED [ 52%]
+tests/test_filtros.py::TestExcluirGalapagos::test_sin_cantones_insulares PASSED [ 56%]
+tests/test_filtros.py::TestExcluirGalapagos::test_insular_separado PASSED [ 60%]
+tests/test_filtros.py::TestExcluirGalapagos::test_suma_partes_igual_total PASSED [ 64%]
+tests/test_filtros.py::TestExcluirGalapagos::test_exclusion_personalizada PASSED [ 68%]
+tests/test_filtros.py::TestExcluirGalapagos::test_error_columna_faltante PASSED [ 72%]
+tests/test_filtros.py::TestExcluirGalapagos::test_sin_insulares_en_datos PASSED [ 76%]
+tests/test_filtros.py::TestReporteControl::test_reporte_integridad PASSED [ 80%]
+tests/test_filtros.py::TestReporteControl::test_conteos_correctos PASSED [ 84%]
+tests/test_filtros.py::TestValidacionDatosReales::test_sin_registros_posteriores_2024_datos_reales PASSED [ 88%]
+tests/test_filtros.py::TestValidacionDatosReales::test_sin_cantones_insulares_datos_reales PASSED [ 92%]
+tests/test_filtros.py::TestValidacionDatosReales::test_anio_hecho_es_entero_datos_reales PASSED [ 96%]
+tests/test_filtros.py::TestValidacionDatosReales::test_sin_nulos_en_anio_datos_reales PASSED [100%]
+
+============================= 25 passed in 1.87s ==============================

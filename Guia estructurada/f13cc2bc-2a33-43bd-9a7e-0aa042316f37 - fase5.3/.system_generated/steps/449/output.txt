@@ -1,0 +1,25 @@
+Command exited with code 0.
+
+Command output:
+      codigo_caso fecha_hecho  anio_hecho provincia           canton            latitud           longitud
+22962       12844  2015-04-17        2015  IMBABURA           IBARRA  0.322459500454944  -79.2126207053661
+22997       29425  2017-02-23        2017  IMBABURA           IBARRA  0.321254000764735  -79.2121059726924
+22999       30149  2017-03-26        2017  IMBABURA           IBARRA           0.322992         -79.206515
+23015       37907  2018-04-27        2018  IMBABURA           IBARRA           0.328349         -79.226783
+23027       41768  2018-10-22        2018  IMBABURA           IBARRA           0.319883         -79.212672
+23039       44771  2019-03-06        2019  IMBABURA           IBARRA         0.33027428       -79.21222329
+23094       64452  2021-11-14        2021  IMBABURA           IBARRA         0.33110288         -79.173146
+23095       64453  2021-11-14        2021  IMBABURA           IBARRA         0.33110288         -79.173146
+23096       64454  2021-11-14        2021  IMBABURA           IBARRA         0.33110288         -79.173146
+23146       93752  2024-06-16        2024  IMBABURA  LAS GOLONDRINAS            0.32191          -79.09843
+
+Cantones de IMBABURA en todo el CSV:
+canton
+IBARRA                   194
+OTAVALO                   60
+COTACACHI                 56
+ANTONIO ANTE              20
+SAN MIGUEL DE URCUQUI     17
+PIMAMPIRO                 10
+LAS GOLONDRINAS            1
+Name: count, dtype: int64

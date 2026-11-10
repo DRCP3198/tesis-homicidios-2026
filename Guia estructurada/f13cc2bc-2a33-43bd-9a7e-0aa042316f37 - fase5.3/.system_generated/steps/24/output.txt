@@ -1,0 +1,10 @@
+Command exited with code 1.
+
+Command output:
+At line:1 char:134
++ ... ::OutputEncoding = $OutputEncoding } catch {}; cd D:\Tesis && .\.venv ...
++                                                                ~~
+The token '&&' is not a valid statement separator in this version.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : InvalidEndOfLine
+ 

@@ -1,0 +1,13 @@
+Command exited with code 0.
+
+Command output:
+=== fecha_hecho === na=0 unique=5235 sample=['2010-01-01', '2010-01-13', '2010-01-29', '2010-02-10', '2010-02-15', '2010-03-02', '2010-03-04', '2010-03-28']
+   datetime coerce na: 0 min: 2010-01-01 00:00:00 max: 2024-12-31 00:00:00
+=== hora_aproximada === na=0 unique=982 sample=['20', '9', '21', '19.5', '6', '17.5', '4', '19']
+   numeric coerce na: 0 non_numeric values: []
+=== edad_victima === na=337 unique=121 sample=['42', '51', '54', '61', '45', '19', '26', '24']
+   numeric coerce na: 337 non_numeric values: []
+=== AUX_HORA_SISTEMA === na=0 unique=24 sample=['20', '9', '21', '19', '6', '17', '4', '16']
+   numeric coerce na: 0 non_numeric values: []
+=== AUX_MINUTO_SISTEMA === na=0 unique=60 sample=['0', '30', '40', '27', '45', '10', '20', '5']
+   numeric coerce na: 0 non_numeric values: []

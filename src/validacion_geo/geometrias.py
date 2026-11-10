@@ -148,6 +148,153 @@ def crear_geodataframe_puntos(df: pd.DataFrame) -> gpd.GeoDataFrame:
 
 
 # =========================================================================
+# PASO 4.3b — Corrección espacial objetiva por Point-in-Polygon (Pre-Auditoría)
+# =========================================================================
+def corregir_jurisdiccion_por_ubicacion(
+    gdf_puntos: gpd.GeoDataFrame,
+    mapa: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
+    """
+    Aplica dos reglas deterministas de corrección jurisdiccional basadas en
+    intersección espacial exacta (`Point-in-Polygon`, predicado `intersects`)
+    antes de ejecutar la auditoría topológica definitiva, e imprime en consola
+    el detalle íntegro de los registros corregidos:
+
+    1. **Regla 1 — Desambiguación espacial cuando `canton == provincia` (22 casos):**
+       En ciertos partes policiales (principalmente de 2024) el digitador repitió
+       el nombre de la provincia dentro de la columna `canton` (ej. `GUAYAS - GUAYAS`,
+       `EL ORO - EL ORO`, `MANABI - MANABI`, `PICHINCHA - PICHINCHA`, `ORELLANA - ORELLANA`).
+       Cuando el punto GPS cae físicamente dentro de un polígono de esa misma provincia
+       cuyo nombre oficial (`CANTON_MAPA`) es distinto al nombre repetido, se asigna
+       el `CANTON_MAPA` donde se ubica el punto (`GUAYAQUIL`, `DURAN`, `NARANJAL`,
+       `EL GUABO`, `SANTA ROSA`, `PASAJE`, `MANTA`, `QUITO`, `LA JOYA DE LOS SACHAS`).
+       *(Si el cantón homónimo sí existe y el punto cae dentro de él, como en
+       `LOJA - LOJA` o `ESMERALDAS - ESMERALDAS`, `CANTON_MAPA == canton` y no se altera).*
+
+    2. **Regla 2 — Corrección de jurisdicción dentro de polígonos de ex Zonas No
+       Delimitadas (`Código DPA 90`: `9001`, `9003`, `9004`) (10 casos):**
+       Para los puntos que caen físicamente en el interior de los 3 polígonos de las
+       antiguas Zonas No Delimitadas pero que fueron digitados con la capital provincial
+       o cabecera zonal lejana (9 casos en `LAS GOLONDRINAS / COTACACHI` digitados como
+       `IBARRA` a ~97 km de distancia, y 1 caso en `EL PIEDRERO / LA TRONCAL` digitado
+       como `GUAYAS - GUAYAQUIL` a ~50.8 km de distancia), se asigna la jurisdicción
+       legal del polígono (`DPA_DESPRO`, `CANTON_MAPA`).
+
+    Parameters
+    ----------
+    gdf_puntos : gpd.GeoDataFrame
+        GeoDataFrame de puntos con columnas `'provincia'`, `'canton'` e `'ID_temp'`.
+    mapa : gpd.GeoDataFrame
+        GeoDataFrame del mapa cantonal con `'DPA_DESPRO'`, `'CANTON_MAPA'` y `'geometry'`.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        GeoDataFrame con `'provincia'` y `'canton'` corregidos en los casos objetivos.
+    """
+    # Si se trata de un DataFrame sintético de test que no incluye columna 'provincia'
+    # o un mapa de prueba sin 'DPA_DESPRO', devolvemos los puntos sin modificar.
+    if "provincia" not in gdf_puntos.columns or "DPA_DESPRO" not in mapa.columns:
+        return gdf_puntos
+
+    gdf = gdf_puntos.copy()
+
+    # Columnas disponibles en el mapa para el cruce espacial.
+    cols_mapa = ["DPA_DESPRO", "CANTON_MAPA", "geometry"]
+    if "DPA_CANTON" in mapa.columns:
+        cols_mapa.insert(0, "DPA_CANTON")
+
+    # Ejecutamos un `sjoin` interno para conocer en qué polígono cae cada punto.
+    # `.drop_duplicates(subset=["ID_temp"])` garantiza relación 1 a 1 por cada punto.
+    cruce = gpd.sjoin(
+        gdf[["ID_temp", "provincia", "canton", "geometry"]],
+        mapa[cols_mapa],
+        how="inner",
+        predicate="intersects",
+    ).drop_duplicates(subset=["ID_temp"])
+
+    # Indexamos por `ID_temp` para consultar rápidamente qué polígono corresponde a cada fila.
+    cruce_idx = cruce.set_index("ID_temp")
+
+    # ── REGLA 1: Registros con `canton == provincia` que caen en otro cantón de su provincia ──
+    ids_en_cruce = gdf["ID_temp"].isin(cruce_idx.index)
+    gdf_cruce = gdf[ids_en_cruce].copy()
+    prov_mapa_serie = gdf_cruce["ID_temp"].map(cruce_idx["DPA_DESPRO"])
+    canton_mapa_serie = gdf_cruce["ID_temp"].map(cruce_idx["CANTON_MAPA"])
+
+    mascara_regla1 = (
+        (gdf_cruce["canton"] == gdf_cruce["provincia"])
+        & (gdf_cruce["provincia"] == prov_mapa_serie)
+        & (gdf_cruce["canton"] != canton_mapa_serie)
+    )
+    ids_regla1 = set(gdf_cruce.loc[mascara_regla1, "ID_temp"])
+
+    if ids_regla1:
+        print("        " + "-" * 86)
+        print(
+            f"        [4.3b-1] CORRECCIÓN POINT-IN-POLYGON POR CANTÓN == PROVINCIA ({len(ids_regla1)} casos):"
+        )
+        print(
+            f"        {'Caso':<10} | {'Año':<4} | {'Provincia':<10} | "
+            f"{'Cantón erróneo → Cantón polígono GPS':<38} | {'Coordenadas (lat, lon)'}"
+        )
+        print("        " + "-" * 86)
+        for idx in gdf.index[gdf["ID_temp"].isin(ids_regla1)]:
+            id_t = int(gdf.loc[idx, "ID_temp"])
+            nuevo_canton = str(cruce_idx.loc[id_t, "CANTON_MAPA"])
+            caso = str(gdf.loc[idx, "codigo_caso"]) if "codigo_caso" in gdf.columns else str(id_t)
+            anio = str(gdf.loc[idx, "anio_hecho"]) if "anio_hecho" in gdf.columns else "N/A"
+            prov = str(gdf.loc[idx, "provincia"])
+            ant_canton = str(gdf.loc[idx, "canton"])
+            coords = f"({gdf.loc[idx, 'lat_num']:.5f}, {gdf.loc[idx, 'lon_num']:.5f})"
+            trans = f"{ant_canton} -> {nuevo_canton}"
+            print(f"        {caso:<10} | {anio:<4} | {prov:<10} | {trans:<38} | {coords}")
+            # Actualizamos el cantón al polígono donde cayó físicamente el punto.
+            gdf.loc[idx, "canton"] = nuevo_canton
+
+    # ── REGLA 2: Registros dentro de polígonos ex-Zonas No Delimitadas (Código DPA 90) ──
+    if "DPA_CANTON" in cruce_idx.columns:
+        cod_dpa_serie = gdf_cruce["ID_temp"].map(cruce_idx["DPA_CANTON"].astype(str))
+        # Polígonos 9001 (Las Golondrinas), 9003 (Manga del Cura) y 9004 (El Piedrero).
+        mascara_regla2 = (
+            cod_dpa_serie.isin(["9001", "9003", "9004"])
+            & (
+                (gdf_cruce["canton"] != canton_mapa_serie)
+                | (gdf_cruce["provincia"] != prov_mapa_serie)
+            )
+        )
+        ids_regla2 = set(gdf_cruce.loc[mascara_regla2, "ID_temp"])
+
+        if ids_regla2:
+            print("        " + "-" * 86)
+            print(
+                f"        [4.3b-2] CORRECCIÓN JURISDICCIONAL EN POLÍGONOS EX-ZND ({len(ids_regla2)} casos):"
+            )
+            print(
+                f"        {'Caso':<10} | {'Año':<4} | {'Polígono ZND':<10} | "
+                f"{'Antes (Prov - Cantón) → Después (Legal)':<42} | {'Coordenadas'}"
+            )
+            print("        " + "-" * 86)
+            for idx in gdf.index[gdf["ID_temp"].isin(ids_regla2)]:
+                id_t = int(gdf.loc[idx, "ID_temp"])
+                nueva_prov = str(cruce_idx.loc[id_t, "DPA_DESPRO"])
+                nuevo_canton = str(cruce_idx.loc[id_t, "CANTON_MAPA"])
+                cod_znd = str(cruce_idx.loc[id_t, "DPA_CANTON"])
+                caso = str(gdf.loc[idx, "codigo_caso"]) if "codigo_caso" in gdf.columns else str(id_t)
+                anio = str(gdf.loc[idx, "anio_hecho"]) if "anio_hecho" in gdf.columns else "N/A"
+                ant_prov = str(gdf.loc[idx, "provincia"])
+                ant_canton = str(gdf.loc[idx, "canton"])
+                coords = f"({gdf.loc[idx, 'lat_num']:.5f}, {gdf.loc[idx, 'lon_num']:.5f})"
+                trans = f"{ant_prov}/{ant_canton} -> {nueva_prov}/{nuevo_canton}"
+                print(f"        {caso:<10} | {anio:<4} | {cod_znd:<10} | {trans:<42} | {coords}")
+                gdf.loc[idx, "provincia"] = nueva_prov
+                gdf.loc[idx, "canton"] = nuevo_canton
+            print("        " + "-" * 86)
+
+    return gdf
+
+
+# =========================================================================
 # PASO 4.4 — Primera Auditoría Topológica (sjoin vectorizado)
 # =========================================================================
 def auditar_punto_en_poligono(
@@ -193,6 +340,11 @@ def auditar_punto_en_poligono(
         - geo_corregir: Registros cuya coordenada cae FUERA de su cantón.
     """
     print("  [4.4] Auditoría topológica: punto-en-polígono (sjoin vectorizado)")
+
+    # Antes del cruce definitivo, aplicamos las 2 reglas deterministas Point-in-Polygon:
+    #   1) Casos donde `canton == provincia` y el punto cae en otro cantón de esa provincia (22 casos).
+    #   2) Casos que caen dentro de los polígonos de las ex Zonas No Delimitadas Código 90 (10 casos).
+    gdf_puntos = corregir_jurisdiccion_por_ubicacion(gdf_puntos, mapa)
 
     n_total = len(gdf_puntos)
 
@@ -264,6 +416,17 @@ def auditar_punto_en_poligono(
     #                     (necesario para guardarlo después en Parquet estándar).
     geo_correctos_df = pd.DataFrame(geo_correctos.drop(columns="geometry")) #elimino la columna geometry
     geo_corregir_df = pd.DataFrame(geo_corregir.drop(columns="geometry"))
+
+    # Guardamos temporalmente qué polígono del mapa tocó cada punto que no coincidió
+    # (o NaN si cayó en el mar/estero) para imprimir el desglose exacto del limbo en el Paso 4.5.
+    if len(geo_corregir_df) > 0 and "ID_temp" in geo_corregir_df.columns:
+        mapa_fisico_por_id = (
+            resultado_sjoin.drop_duplicates(subset=["ID_temp"])
+            .set_index("ID_temp")["CANTON_MAPA"]
+        )
+        geo_corregir_df["_POLIGONO_FISICO"] = geo_corregir_df["ID_temp"].map(
+            mapa_fisico_por_id
+        )
 
     n_correctos = len(geo_correctos_df)
     n_corregir = len(geo_corregir_df)
@@ -344,5 +507,54 @@ def separar_por_formato(
 
     print(f"        Con punto decimal (limbo): {len(limbo_formato_correcto):,}")
     print(f"        Sin punto decimal (reparar): {len(geo_corregir_decimales):,}")
+
+    # Si tenemos la columna diagnóstica `_POLIGONO_FISICO`, imprimimos en consola
+    # la clasificación explícita de los casos anómalos del limbo (zona marítima vs. lindero terrestre)
+    # y luego eliminamos esa columna auxiliar para mantener el esquema limpio.
+    if "_POLIGONO_FISICO" in limbo_formato_correcto.columns:
+        mascara_agua = limbo_formato_correcto["_POLIGONO_FISICO"].isna()
+        df_agua = limbo_formato_correcto[mascara_agua]
+        df_lindero = limbo_formato_correcto[~mascara_agua]
+
+        print("        " + "-" * 86)
+        print(
+            f"        [AUDITORÍA DE LIMBO] DESGLOSE DE CASOS ANÓMALOS RETENIDOS ({len(limbo_formato_correcto)} casos):"
+        )
+        print(
+            f"          • Subgrupo A — Zona marítima / estuarina / fluvial (fuera de polígono): {len(df_agua):>2} casos"
+        )
+        if len(df_agua) > 0 and "provincia" in df_agua.columns:
+            resumen_agua = (
+                df_agua.groupby(["provincia", "canton"])
+                .size()
+                .reset_index(name="casos")
+            )
+            for _, r in resumen_agua.iterrows():
+                print(
+                    f"              - {r['provincia']} / {r['canton']}: {r['casos']} caso(s) en cuerpo de agua o borde costero"
+                )
+
+        print(
+            f"          • Subgrupo B — Lindero terrestre intercantonal (cae en cantón vecino):  {len(df_lindero):>2} casos"
+        )
+        if len(df_lindero) > 0 and "provincia" in df_lindero.columns:
+            resumen_lind = (
+                df_lindero.groupby(["provincia", "canton", "_POLIGONO_FISICO"])
+                .size()
+                .reset_index(name="casos")
+            )
+            for _, r in resumen_lind.iterrows():
+                print(
+                    f"              - Declarado: {r['provincia']} / {r['canton']} "
+                    f"| Polígono físico: {r['_POLIGONO_FISICO']} ({r['casos']} caso/s)"
+                )
+        print("        " + "-" * 86)
+
+        limbo_formato_correcto = limbo_formato_correcto.drop(
+            columns=["_POLIGONO_FISICO"]
+        )
+        geo_corregir_decimales = geo_corregir_decimales.drop(
+            columns=["_POLIGONO_FISICO"], errors="ignore"
+        )
 
     return limbo_formato_correcto, geo_corregir_decimales #entonces detecto em pocas palabras si contiene . o ,.

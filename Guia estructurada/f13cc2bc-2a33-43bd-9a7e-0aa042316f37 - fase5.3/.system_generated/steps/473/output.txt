@@ -1,0 +1,1 @@
+Made 1 replacement in D:\Tesis\tests\test_normalizar_texto.py starting at line 318 (+18/-0 lines).

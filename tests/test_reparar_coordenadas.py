@@ -24,6 +24,7 @@ from src.validacion_geo.cartografia import cargar_mapa_cantonal
 from src.validacion_geo.ensamblaje import ensamblar_base_final
 from src.validacion_geo.geometrias import (
     auditar_punto_en_poligono,
+    corregir_jurisdiccion_por_ubicacion,
     crear_geodataframe_puntos,
     separar_por_formato,
 )
@@ -636,3 +637,32 @@ class TestPipelineCompletoReal:
         assert "LOGRONO" in cantones_mapa
         assert "RUMIDAHUI" not in cantones_mapa
         assert "LOGRODO" not in cantones_mapa
+
+    def test_corregir_jurisdiccion_por_ubicacion_point_in_polygon(self, mapa_cantonal):
+        """
+        Verifica que corregir_jurisdiccion_por_ubicacion() corrija:
+        1) Casos con canton == provincia ('GUAYAS' -> 'GUAYAQUIL').
+        2) Casos dentro de polígonos ex-ZND ('IMBABURA/IBARRA' en 9001 -> 'COTACACHI').
+        """
+        df_prueba = pd.DataFrame([
+            {
+                "codigo_caso": "T-1",
+                "anio_hecho": 2024,
+                "provincia": "GUAYAS",
+                "canton": "GUAYAS",
+                "latitud": "-2.15355",
+                "longitud": "-79.93094",
+            },
+            {
+                "codigo_caso": "T-2",
+                "anio_hecho": 2018,
+                "provincia": "IMBABURA",
+                "canton": "IBARRA",
+                "latitud": "0.32246",
+                "longitud": "-79.21262",
+            },
+        ])
+        gdf = crear_geodataframe_puntos(df_prueba)
+        gdf_corr = corregir_jurisdiccion_por_ubicacion(gdf, mapa_cantonal)
+        assert gdf_corr.loc[0, "canton"] == "GUAYAQUIL"
+        assert gdf_corr.loc[1, "canton"] == "COTACACHI"

@@ -1,0 +1,107 @@
+Command exited with code 0.
+
+Command output:
+============================================================
+  FASE 4.1–4.2: CARGA Y HOMOLOGACIÓN CARTOGRÁFICA
+============================================================
+  Leyendo shapefile: D:\Tesis\data\raw\cartografia\nxcantones.shp
+  Polígonos cargados: 224
+  CRS original: EPSG:32717
+  Columnas: ['DPA_VALOR', 'DPA_ANIO', 'DPA_CANTON', 'DPA_DESCAN', 'DPA_PROVIN', 'DPA_DESPRO', 'geometry']
+  CRS reproyectado: EPSG:4326
+  Geometrías reparadas: 1 (antes) → 0 (despues)
+------------------------------------------------------------
+  [AUDITORÍA SHP] Corrección de caracteres corruptos en DPA_DESCAN:
+  Provincia (SHP)    | DPA_DESCAN (Crudo) | Sin corrección | CANTON_MAPA (Corregido)
+  ------------------------------------------------------------------
+  PICHINCHA          | RUMIÐAHUI      | RUMIDAHUI      | RUMINAHUI     
+  MORONA SANTIAGO    | LOGROÐO        | LOGRODO        | LOGRONO       
+------------------------------------------------------------
+  Cantones en mapa (antes de integrar ZND): 222
+------------------------------------------------------------
+  [AUDITORÍA ZND] Incorporación legal de antiguas Zonas No Delimitadas (Código 90):
+  DPA    | Zona original (SHP) | Jurisdicción asignada  | Sustento Legal / Normativo
+  ------------------------------------------------------------------------------------------------
+  9003   | MANGA DEL CURA    | MANABI - EL CARMEN     | Consulta Popular CNE (R.O. 611, 2015) / Ley R.O.S. 994 (28-abr-2017)
+  9001   | LAS GOLONDRINAS   | IMBABURA - COTACACHI   | Consulta Popular CNE (03-abr-2016) / Ley R.O.S. 999 (08-may-2017)
+  9004   | EL PIEDRERO       | CANAR - LA TRONCAL     | SENPLADES Acuerdo 557-2012 (Distrito 03D03) / Subzona Policial Cañar N.° 3
+------------------------------------------------------------
+  Excluidos insulares (Galápagos): 3
+  Polígonos continentales activos: 221 (216 cantones únicos)
+============================================================
+  [4.3] Creación de puntos geoespaciales
+        Registros entrada: 38,566
+        NaN en latitud:  0
+        NaN en longitud: 0
+        Registros con coordenadas válidas: 38,566
+        GeoDataFrame creado: 38,566 puntos en EPSG:4326
+  [4.4] Auditoría topológica: punto-en-polígono (sjoin vectorizado)
+        Total puntos evaluados: 38,566
+        Correctos (dentro de su cantón): 38,503 (99.84%)
+        A corregir (fuera de su cantón): 63 (0.16%)
+  [4.5] Separación por formato de coordenadas
+        Con punto decimal (limbo): 62
+        Sin punto decimal (reparar): 1
+       codigo_caso  anio_hecho   provincia                    canton  DPA_DESPRO              CANTON_MAPA              nearest_can  dist_nearest_m  dist_rep_m   lat_num    lon_num
+20133        97311        2024      GUAYAS                 GUAYAQUIL       CANAR               LA TRONCAL               LA TRONCAL             0.0     50825.9 -2.349380 -79.312050
+1298   HM1001 0221        2010      CARCHI                    TULCAN      CARCHI       SAN PEDRO DE HUACA       SAN PEDRO DE HUACA             0.0      1908.4  0.631975 -77.725894
+1335   HM1301 0134        2013      CARCHI                    TULCAN      CARCHI       SAN PEDRO DE HUACA       SAN PEDRO DE HUACA             0.0      2361.2  0.627829 -77.724810
+1349          4156        2014      CARCHI                    TULCAN      CARCHI       SAN PEDRO DE HUACA       SAN PEDRO DE HUACA             0.0      1979.5  0.622817 -77.730955
+3791         89595        2024      EL ORO                    EL ORO      EL ORO                 EL GUABO                 EL GUABO             0.0        -1.0 -3.109840 -79.897710
+4085         95850        2024      EL ORO                    EL ORO      EL ORO               SANTA ROSA               SANTA ROSA             0.0        -1.0 -3.465970 -79.966170
+4193         97194        2024      EL ORO                    EL ORO      EL ORO                   PASAJE                   PASAJE             0.0        -1.0 -3.332660 -79.782730
+2257   HM1104 0011        2011      EL ORO                HUAQUILLAS      EL ORO                ARENILLAS                ARENILLAS             0.0       190.4 -3.497031 -80.208266
+2603          4389        2014      EL ORO                HUAQUILLAS      EL ORO                ARENILLAS                ARENILLAS             0.0       337.5 -3.497351 -80.206361
+2766         28055        2016      EL ORO                HUAQUILLAS      EL ORO                ARENILLAS                ARENILLAS             0.0       547.0 -3.499757 -80.206547
+2775         28574        2017      EL ORO                HUAQUILLAS      EL ORO                ARENILLAS                ARENILLAS             0.0       292.0 -3.494780 -80.203412
+2828         36376        2018      EL ORO                HUAQUILLAS      EL ORO                ARENILLAS                ARENILLAS             0.0       766.7 -3.500674 -80.204355
+3106         60422        2021      EL ORO                HUAQUILLAS      EL ORO                ARENILLAS                ARENILLAS             0.0       786.6 -3.500676 -80.204036
+13695        64650        2021      GUAYAS  ALFREDO BAQUERIZO MORENO      GUAYAS  SAN JACINTO DE YAGUACHI  SAN JACINTO DE YAGUACHI             0.0         2.7 -1.987862 -79.604687
+17981        89589        2024      GUAYAS                    GUAYAS      GUAYAS                GUAYAQUIL                GUAYAQUIL             0.0        -1.0 -2.092220 -80.001720
+17982        89590        2024      GUAYAS                    GUAYAS      GUAYAS                GUAYAQUIL                GUAYAQUIL             0.0        -1.0 -2.153550 -79.930940
+17983        89592        2024      GUAYAS                    GUAYAS      GUAYAS                GUAYAQUIL                GUAYAQUIL             0.0        -1.0 -2.140920 -79.935250
+18015        89696        2024      GUAYAS                    GUAYAS      GUAYAS                GUAYAQUIL                GUAYAQUIL             0.0        -1.0 -2.139430 -79.947130
+19213        94210        2024      GUAYAS                    GUAYAS      GUAYAS                GUAYAQUIL                GUAYAQUIL             0.0        -1.0 -2.105110 -79.974130
+19407        94917        2024      GUAYAS                    GUAYAS      GUAYAS                GUAYAQUIL                GUAYAQUIL             0.0        -1.0 -2.245360 -79.921760
+19450        95046        2024      GUAYAS                    GUAYAS      GUAYAS                    DURAN                    DURAN             0.0        -1.0 -2.173200 -79.808570
+19680        95742        2024      GUAYAS                    GUAYAS      GUAYAS                GUAYAQUIL                GUAYAQUIL             0.0        -1.0 -2.105670 -79.954270
+20101        97196        2024      GUAYAS                    GUAYAS      GUAYAS                 NARANJAL                 NARANJAL             0.0        -1.0 -2.740440 -79.698890
+20393        98225        2024      GUAYAS                    GUAYAS      GUAYAS                    DURAN                    DURAN             0.0        -1.0 -2.153550 -79.823010
+20395        98233        2024      GUAYAS                    GUAYAS      GUAYAS                GUAYAQUIL                GUAYAQUIL             0.0        -1.0 -2.220390 -79.910260
+22962        12844        2015    IMBABURA                    IBARRA    IMBABURA                COTACACHI                COTACACHI             0.0     97848.8  0.322460 -79.212621
+22997        29425        2017    IMBABURA                    IBARRA    IMBABURA                COTACACHI                COTACACHI             0.0     97866.6  0.321254 -79.212106
+22999        30149        2017    IMBABURA                    IBARRA    IMBABURA                COTACACHI                COTACACHI             0.0     97232.6  0.322992 -79.206515
+23015        37907        2018    IMBABURA                    IBARRA    IMBABURA                COTACACHI                COTACACHI             0.0     98891.1  0.328349 -79.226783
+23027        41768        2018    IMBABURA                    IBARRA    IMBABURA                COTACACHI                COTACACHI             0.0     97997.7  0.319883 -79.212672
+23039        44771        2019    IMBABURA                    IBARRA    IMBABURA                COTACACHI                COTACACHI             0.0     97377.4  0.330274 -79.212223
+23094        64452        2021    IMBABURA                    IBARRA    IMBABURA                COTACACHI                COTACACHI             0.0     93582.2  0.331103 -79.173146
+23095        64453        2021    IMBABURA                    IBARRA    IMBABURA                COTACACHI                COTACACHI             0.0     93582.2  0.331103 -79.173146
+23096        64454        2021    IMBABURA                    IBARRA    IMBABURA                COTACACHI                COTACACHI             0.0     93582.2  0.331103 -79.173146
+9043   HM1112 0053        2011      GUAYAS                    BALZAR    LOS RIOS                  MOCACHE                  MOCACHE             0.0         0.0 -1.134770 -79.685027
+30792        95421        2024      MANABI                    MANABI      MANABI                    MANTA                    MANTA             0.0        -1.0 -0.983670 -80.708700
+30827        95782        2024      MANABI                    MANABI      MANABI                    MANTA                    MANTA             0.0        -1.0 -0.980390 -80.700220
+36523        89597        2024    ORELLANA                  ORELLANA    ORELLANA    LA JOYA DE LOS SACHAS    LA JOYA DE LOS SACHAS             0.0     16510.4 -0.253670 -76.876450
+36524        89598        2024    ORELLANA                  ORELLANA    ORELLANA    LA JOYA DE LOS SACHAS    LA JOYA DE LOS SACHAS             0.0     16510.4 -0.253670 -76.876450
+36525        89599        2024    ORELLANA                  ORELLANA    ORELLANA    LA JOYA DE LOS SACHAS    LA JOYA DE LOS SACHAS             0.0     16510.4 -0.253670 -76.876450
+36526        89600        2024    ORELLANA                  ORELLANA    ORELLANA    LA JOYA DE LOS SACHAS    LA JOYA DE LOS SACHAS             0.0     16510.4 -0.253670 -76.876450
+34495        89593        2024   PICHINCHA                 PICHINCHA   PICHINCHA                    QUITO                    QUITO             0.0    145216.3 -0.118060 -78.520350
+34671        96018        2024   PICHINCHA                 PICHINCHA   PICHINCHA                    QUITO                    QUITO             0.0    136602.2 -0.262670 -78.538470
+35197        79821        2023  TUNGURAHUA                   TISALEO  TUNGURAHUA                    MOCHA                    MOCHA             0.0      2209.6 -1.395061 -78.628592
+2285   HM1107 0072        2011      EL ORO                   MACHALA         NaN                      NaN                  MACHALA           126.6       126.6 -3.267306 -80.002026
+3041         57089        2020      EL ORO                   MACHALA         NaN                      NaN                  MACHALA            40.5        40.5 -3.267152 -80.001252
+3094         59822        2021      EL ORO                   MACHALA         NaN                      NaN                  MACHALA           156.5       156.5 -3.271876 -80.003511
+3208         75308        2023      EL ORO                   MACHALA         NaN                      NaN                  MACHALA             1.2         1.2 -3.272332 -80.002186
+3367         78231        2023      EL ORO                   MACHALA         NaN                      NaN                  MACHALA            11.5        11.5 -3.270795 -80.001873
+3810         90811        2024      EL ORO                   MACHALA         NaN                      NaN                  MACHALA            97.0        97.0 -3.267710 -80.001850
+4156         96852        2024      EL ORO                   MACHALA         NaN                      NaN                  MACHALA             6.1         6.1 -3.269770 -80.001550
+4195         97251        2024      EL ORO                   MACHALA         NaN                      NaN                  MACHALA            54.2        54.2 -3.269550 -80.001940
+4383         66741        2022      EL ORO                   MACHALA         NaN                      NaN                  MACHALA             5.1         5.1 -3.270562 -80.001752
+4384         66740        2022      EL ORO                   MACHALA         NaN                      NaN                  MACHALA             5.1         5.1 -3.270562 -80.001752
+4495         70283        2022      EL ORO                   MACHALA         NaN                      NaN                  MACHALA            98.7        98.7 -3.265179 -80.001777
+4541         71624        2022      EL ORO                   MACHALA         NaN                      NaN                  MACHALA            74.6        74.6 -3.265371 -80.001560
+4610         73966        2022      EL ORO                   MACHALA         NaN                      NaN                  MACHALA           121.4       121.4 -3.266251 -80.001981
+6439         80775        2023  ESMERALDAS                ESMERALDAS         NaN                      NaN               ESMERALDAS            13.2        13.2  0.965388 -79.648175
+12957        60685        2021      GUAYAS                 GUAYAQUIL         NaN                      NaN                GUAYAQUIL            83.1        83.1 -2.227680 -79.924948
+13931        75636        2023      GUAYAS                 GUAYAQUIL         NaN                      NaN                GUAYAQUIL           148.8       148.8 -2.241434 -79.933890
+15693        81862        2023      GUAYAS               SAMBORONDON         NaN                      NaN              SAMBORONDON           621.5       621.5 -2.101779 -79.865808
+30618        92327        2024      MANABI                PORTOVIEJO         NaN                      NaN               PORTOVIEJO             0.0         0.0 -0.848130 -80.533710
